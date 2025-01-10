@@ -7,54 +7,92 @@
 	<key>PreferenceSpecifiers</key>
 	<array>
 		<dict>
-			<key>Type</key>
-			<string>PSGroupSpecifier</string>
-			<key>Title</key>
-			<string>Group</string>
-		</dict>
-		<dict>
-			<key>Type</key>
-			<string>PSTextFieldSpecifier</string>
-			<key>Title</key>
-			<string>Name</string>
-			<key>Key</key>
-			<string>name_preference</string>
 			<key>DefaultValue</key>
-			<string></string>
-			<key>IsSecure</key>
-			<false/>
-			<key>KeyboardType</key>
-			<string>Alphabet</string>
-			<key>AutocapitalizationType</key>
-			<string>None</string>
-			<key>AutocorrectionType</key>
-			<string>No</string>
+			<real>0.8</real>
+			<key>Key</key>
+			<string>BackgroundColor</string>
+			<key>Title</key>
+			<string>Appearance</string>
+			<key>Titles</key>
+			<array>
+				<string>Light Mode</string>
+				<string>Dark Mode</string>
+			</array>
+			<key>Type</key>
+			<string>PSMultiValueSpecifier</string>
+			<key>Values</key>
+			<array>
+				<real>0.85</real>
+				<real>0.3</real>
+			</array>
 		</dict>
 		<dict>
 			<key>Type</key>
 			<string>PSToggleSwitchSpecifier</string>
 			<key>Title</key>
-			<string>Enabled</string>
+			<string>Grid View</string>
 			<key>Key</key>
-			<string>enabled_preference</string>
+			<string>GridView</string>
 			<key>DefaultValue</key>
 			<true/>
 		</dict>
 		<dict>
 			<key>Type</key>
-			<string>PSSliderSpecifier</string>
-			<key>Key</key>
-			<string>slider_preference</string>
+			<string>PSGroupSpecifier</string>
+			<key>Title</key>
+			<string>Unit Settings</string>
+		</dict>
+		<dict>
 			<key>DefaultValue</key>
-			<real>0.5</real>
-			<key>MinimumValue</key>
 			<integer>0</integer>
-			<key>MaximumValue</key>
-			<integer>1</integer>
-			<key>MinimumValueImage</key>
-			<string></string>
-			<key>MaximumValueImage</key>
-			<string></string>
+			<key>Key</key>
+			<string>MeasurementUnit</string>
+			<key>Title</key>
+			<string>Measurement Unit</string>
+			<key>Titles</key>
+			<array>
+				<string>Metric</string>
+				<string>Imperial</string>
+			</array>
+			<key>Type</key>
+			<string>PSMultiValueSpecifier</string>
+			<key>Values</key>
+			<array>
+				<integer>0</integer>
+				<integer>1</integer>
+			</array>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+			<key>Title</key>
+			<string>Data Processing</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSMultiValueSpecifier</string>
+			<key>Title</key>
+			<string>Subsampling Size</string>
+			<key>Key</key>
+			<string>VoxelSize</string>
+			<key>DefaultValue</key>
+			<real>0.01</real>
+			<key>Titles</key>
+			<array>
+				<string>10 cm</string>
+				<string>5 cm</string>
+				<string>2 cm</string>
+				<string>1 cm (Default)</string>
+				<string>Disabled</string>
+			</array>
+			<key>Values</key>
+			<array>
+				<real>0.1</real>
+				<real>0.05</real>
+				<real>0.02</real>
+				<real>0.01</real>
+				<real>0</real>
+			</array>
 		</dict>
 	</array>
 </dict>

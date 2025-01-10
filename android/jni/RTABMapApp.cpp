@@ -2714,7 +2714,6 @@ void RTABMapApp::setMeshDecimationFactor(float value)
 void RTABMapApp::setMeshTriangleSize(int value)
 {
 	meshTrianglePix_ = value;
-//    meshTrianglePix_ = 30;
 }
 
 void RTABMapApp::setClusterRatio(float value)
@@ -2733,9 +2732,9 @@ void RTABMapApp::setRenderingTextureDecimation(int value)
 	renderingTextureDecimation_ = value;
 }
 
-void RTABMapApp::setBackgroundColor(float gray)
+void RTABMapApp::setBackgroundColor(float value)
 {
-	backgroundColor_ = gray;
+	backgroundColor_ = value;
 	float v = backgroundColor_ == 0.5f?0.4f:1.0f-backgroundColor_;
 	main_scene_.setGridColor(v, v, v);
 	main_scene_.setBackgroundColor(backgroundColor_, backgroundColor_, backgroundColor_);

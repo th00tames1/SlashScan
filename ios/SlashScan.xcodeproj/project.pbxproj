@@ -11,6 +11,7 @@
 		20228B202D20B0D100049849 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2042C5602C9A544000AA418A /* ViewController.swift */; };
 		2087AFA52C9A0ABC00F9B893 /* Zip in Frameworks */ = {isa = PBXBuildFile; productRef = 2087AFA42C9A0ABC00F9B893 /* Zip */; };
 		20B74C612C9B39D8001CE332 /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20B74C602C9B39D3001CE332 /* Main.swift */; };
+		20DB1E792D30CB1D0015F6E8 /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 20DB1E782D30CB1D0015F6E8 /* Settings.bundle */; };
 		4E20B24E266AB94300316EE6 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4E20B24D266AB94300316EE6 /* Images.xcassets */; };
 		4E2C516725A63119005CEDBD /* DatabaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E2C516525A63119005CEDBD /* DatabaseView.swift */; };
 		4E2C516825A63119005CEDBD /* VerticalScrollerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E2C516625A63119005CEDBD /* VerticalScrollerView.swift */; };
@@ -157,6 +158,7 @@
 		20382D8C2D209CCD00670203 /* util3d_surface.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = util3d_surface.hpp; path = "RTABMapApp/Libraries/include/rtabmap-0.21/rtabmap/core/impl/util3d_surface.hpp"; sourceTree = SOURCE_ROOT; };
 		2042C5602C9A544000AA418A /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ViewController.swift; path = ../../ViewController.swift; sourceTree = "<group>"; };
 		20B74C602C9B39D3001CE332 /* Main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Main.swift; sourceTree = "<group>"; };
+		20DB1E782D30CB1D0015F6E8 /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; name = Settings.bundle; path = SSmart/Settings.bundle; sourceTree = SOURCE_ROOT; };
 		4E20B24D266AB94300316EE6 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = RTABMapApp/Images.xcassets; sourceTree = SOURCE_ROOT; };
 		4E2C516525A63119005CEDBD /* DatabaseView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = DatabaseView.swift; path = ../RTABMapApp/DatabaseView.swift; sourceTree = "<group>"; };
 		4E2C516625A63119005CEDBD /* VerticalScrollerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = VerticalScrollerView.swift; path = ../RTABMapApp/VerticalScrollerView.swift; sourceTree = "<group>"; };
@@ -468,6 +470,7 @@
 				20B74C602C9B39D3001CE332 /* Main.swift */,
 				2042C5602C9A544000AA418A /* ViewController.swift */,
 				20382D8C2D209CCD00670203 /* util3d_surface.hpp */,
+				20DB1E782D30CB1D0015F6E8 /* Settings.bundle */,
 			);
 			path = Common;
 			sourceTree = "<group>";
@@ -778,6 +781,7 @@
 			files = (
 				200885912CDC7A2B00698393 /* Main.storyboard in Resources */,
 				4E20B24E266AB94300316EE6 /* Images.xcassets in Resources */,
+				20DB1E792D30CB1D0015F6E8 /* Settings.bundle in Resources */,
 				4EE016C4259BE464008CCE65 /* LaunchScreen.storyboard in Resources */,
 				4EE016C7259BE46F008CCE65 /* Assets.xcassets in Resources */,
 			);
@@ -995,7 +999,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_USE_OPTIMIZATION_PROFILE = NO;
@@ -1061,7 +1065,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_USE_OPTIMIZATION_PROFILE = NO;

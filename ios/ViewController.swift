@@ -895,7 +895,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                     "Project: \(projectName)\n" +
                     "File Name: \(dataName)\n" +
                     gpsString +
-                    "Status: \(self.getStateString(state: self.mState))\n" +
                     "Memory Usage : \(usedMem) MB\n"
             }
             if self.debugShown {
@@ -1408,39 +1407,35 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                     })
                 }
             }),
-//            UIAction(title: "Restore All Default Settings", attributes: actionSettingsEnabled ? [] : .disabled, state: .off, handler: { _ in
-//                
-//                let ac = UIAlertController(title: "Reset All Default Settings", message: "Do you want to reset all settings to default?", preferredStyle: .alert)
-//                ac.addAction(UIAlertAction(title: "Yes", style: .default, handler: { _ in
-//                    let notificationCenter = NotificationCenter.default
-//                    notificationCenter.removeObserver(self)
-//                    UserDefaults.standard.reset()
-//                    self.registerSettingsBundle()
-//                    self.updateDisplayFromDefaults();
-//                    notificationCenter.addObserver(self, selector: #selector(self.defaultsChanged), name: UserDefaults.didChangeNotification, object: nil)
-//                }))
-//                ac.addAction(UIAlertAction(title: "No", style: .cancel, handler: nil))
-//                self.present(ac, animated: true)
-//             })
+            UIAction(title: "Restore All Default Settings", attributes: actionSettingsEnabled ? [] : .disabled, state: .off, handler: { _ in
+                
+                let ac = UIAlertController(title: "Reset All Default Settings", message: "Do you want to reset all settings to default?", preferredStyle: .alert)
+                ac.addAction(UIAlertAction(title: "Yes", style: .default, handler: { _ in
+                    let notificationCenter = NotificationCenter.default
+                    notificationCenter.removeObserver(self)
+                    UserDefaults.standard.reset()
+                    self.registerSettingsBundle()
+                    self.updateDisplayFromDefaults();
+                    notificationCenter.addObserver(self, selector: #selector(self.defaultsChanged), name: UserDefaults.didChangeNotification, object: nil)
+                }))
+                ac.addAction(UIAlertAction(title: "No", style: .cancel, handler: nil))
+                self.present(ac, animated: true)
+             })
         ])
 
         menuButton.menu = UIMenu(title: "", children: [fileMenu, settingsMenu])
         menuButton.addTarget(self, action: #selector(ViewController.menuOpened(_:)), for: .menuActionTriggered)
         
         let cameraMenu = UIMenu(title: "View", options: .displayInline, children: [
-            UIAction(title: "Third-P. View", image: cameraMode == 1 ? UIImage(systemName: "checkmark.circle") : UIImage(systemName: "circle"), handler: { _ in
-                self.setGLCamera(type: 1)
-                self.TouchAction(true)
-            }),
-            UIAction(title: "Top View", image: cameraMode == 2 ? UIImage(systemName: "checkmark.circle") : UIImage(systemName: "circle"), handler: { _ in
+            UIAction(title: "Perspective View", image: cameraMode == 2 ? UIImage(systemName: "checkmark.circle") : UIImage(systemName: "circle"), handler: { _ in
                 self.setGLCamera(type: 2)
                 self.TouchAction(true)
             }),
-            UIAction(title: "Ortho View", image: cameraMode == 3 ? UIImage(systemName: "checkmark.circle") : UIImage(systemName: "circle"), handler: { _ in
+            UIAction(title: "Orthogonal View", image: cameraMode == 3 ? UIImage(systemName: "checkmark.circle") : UIImage(systemName: "circle"), handler: { _ in
                 self.setGLCamera(type: 3)
                 self.TouchAction(true)
             }),
-            UIAction(title: "First-P. View", image: cameraMode == 0 ? UIImage(systemName: "checkmark.circle") : UIImage(systemName: "circle"), attributes: (self.mState == .STATE_CAMERA || self.mState == .STATE_MAPPING || self.mState == .STATE_VISUALIZING_CAMERA) ? [] : .disabled, handler: { _ in
+            UIAction(title: "Point of View", image: cameraMode == 0 ? UIImage(systemName: "checkmark.circle") : UIImage(systemName: "circle"), attributes: (self.mState == .STATE_CAMERA || self.mState == .STATE_MAPPING || self.mState == .STATE_VISUALIZING_CAMERA) ? [] : .disabled, handler: { _ in
                 self.setGLCamera(type: 0)
                 if(self.mState == .STATE_VISUALIZING)
                 {
@@ -1455,17 +1450,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                 }
             })
         ])
-
-//        let DebugMenu = UIMenu(title: "Debug", options: .displayInline, children: [
-//            UIAction(title: "Debug", image: debugShown ? UIImage(systemName: "checkmark.circle") : UIImage(systemName: "circle"), attributes: (self.mState != .STATE_WELCOME) ? [] : .disabled, handler: { _ in
-//                self.debugShown = !self.debugShown
-//                self.statusShown = !self.statusShown
-//                self.TouchAction(true)
-//            })
-//        ])
-
         var viewMenuChildren: [UIMenuElement] = []
-//        viewMenuChildren.append(DebugMenu)
         viewMenuChildren.append(cameraMenu)
         viewButton.menu = UIMenu(title: "", children: viewMenuChildren)
         viewButton.addTarget(self, action: #selector(ViewController.menuOpened(_:)), for: .menuActionTriggered)
@@ -1849,7 +1834,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                 }
             }
             else{
-                TouchAction(!mHudVisible)
                 rtabmap?.onTouchEvent(touch_count: 1, event: 7, x0: Float(normalizedX), y0: Float(normalizedY), x1: 0.0, y1: 0.0)
                 print("singleTapped")
                 if self.isPaused {
@@ -1938,6 +1922,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         rtabmap!.setMeshDecimationFactor(value: defaults.float(forKey: "MeshDecimationFactor"));
         let bgColor = defaults.float(forKey: "BackgroundColor");
         rtabmap!.setBackgroundColor(gray: bgColor);
+        rtabmap!.setGridVisible(visible: defaults.bool(forKey: "GridView"));
 //        let format = defaults.string(forKey: "ExportPointCloudFormat")!;
         DispatchQueue.main.async {
             self.statusLabel.textColor = bgColor>=0.6 ? UIColor(white: 0.0, alpha: 1) : UIColor(white: 1.0, alpha: 1)
@@ -2795,7 +2780,13 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                         if let csvData = self.readCSV(fileName: csvFileName, name: name) {
                             let volume = csvData.volume
                             DispatchQueue.main.async {
-                                self.titleContent.text = "Volume: \(volume) m³"
+                                if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
+                                    self.titleContent.text = "Volume: \(volume) m³"
+                                }
+                                else {
+                                    let imp_volume = round(100 * volume * 35.3147) / 100
+                                    self.titleContent.text = "Volume : \(imp_volume) ft³"
+                                }
                             }
                         } else {
                             DispatchQueue.main.async {
@@ -3177,6 +3168,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             self.rtabmap!.setWireframe(enabled: false)
             self.closeVisualization()
             rtabmap?.removePoint();
+            rtabmap?.setGridVisible(visible: UserDefaults.standard.bool(forKey: "GridView"))
             if self.isPaused {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     self.view.setNeedsDisplay()
@@ -3189,7 +3181,13 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                 if FileManager.default.fileExists(atPath: csvFileURL.path) {
                     if let csvData = self.readCSV(fileName: csvFileName, name: name) {
                         let volume = csvData.volume
-                        self.titleContent.text = "Volume : \(volume) m³"
+                        if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
+                            self.titleContent.text = "Volume : \(volume) m³"
+                        }
+                        else {
+                            let imp_volume = round(100 * volume * 35.3147) / 100
+                            self.titleContent.text = "Volume : \(imp_volume) ft³"
+                        }
                     }
                 } else {
                     DispatchQueue.main.async {
@@ -3205,9 +3203,15 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         else{
             self.showToast(message: "Measurement Mode ON", seconds: 3)
             editButton.tintColor = .systemRed
+            rtabmap?.setGridVisible(visible: false)
             self.updateState(state: .STATE_EDIT)
             self.rtabmap!.setWireframe(enabled: true)
-            self.titleContent.text = "Volume : 0 m³"
+            if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
+                self.titleContent.text = "Volume : 0 m³"
+            }
+            else {
+                self.titleContent.text = "Volume : 0 ft³"
+            }
         }
     }
 
@@ -3250,9 +3254,14 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     @IBAction func editsaveButtonTapped(_ sender: UIButton) {
         //Volume Calculation
         self.showToast(message: "The volume has been calculated.", seconds: 4)
-        let showvolume = round(1000 * rtabmap!.calculateMeshVolume()) / 1000
-        self.titleContent.text = "Volume : \(showvolume) m³"
-        
+        let showvolume = round(100 * rtabmap!.calculateMeshVolume()) / 100
+        if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
+            self.titleContent.text = "Volume : \(showvolume) m³"
+        }
+        else {
+            let showvolume = round(100 * rtabmap!.calculateMeshVolume() * 35.3147) / 100
+            self.titleContent.text = "Volume : \(showvolume) ft³"
+        }
         // Update the CSV with the new volume
         if let databasePath = self.openedDatabasePath {
             let csvFileName = (databasePath.lastPathComponent as NSString).deletingPathExtension + ".csv"

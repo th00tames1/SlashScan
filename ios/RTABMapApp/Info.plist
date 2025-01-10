@@ -29,7 +29,7 @@
 	<key>MKDirectionsApplicationSupportedModes</key>
 	<array/>
 	<key>NSCameraUsageDescription</key>
-	<string>The camera is used for scanning textures with LiDAR.</string>
+	<string>The camera is used for scanning colors with LiDAR.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>The GPS is used for recording coordinates of piles.</string>
 	<key>UIApplicationSceneManifest</key>
@@ -65,8 +65,6 @@
 		<string>opengles-2</string>
 		<string>arkit</string>
 	</array>
-	<key>UIRequiresFullScreen</key>
-	<true/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

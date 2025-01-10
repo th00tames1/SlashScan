@@ -2,6 +2,45 @@ import UIKit
 import ARKit
 
 func setDefaultsFromSettings() {
+    
+    let plistFiles = ["Root"]
+    
+    for plistName in plistFiles {
+        //Read PreferenceSpecifiers from Root.plist in Settings.Bundle
+        if let settingsURL = Bundle.main.url(forResource: plistName, withExtension: "plist", subdirectory: "Settings.bundle"),
+            let settingsPlist = NSDictionary(contentsOf: settingsURL),
+            let preferences = settingsPlist["PreferenceSpecifiers"] as? [NSDictionary] {
+
+            for prefSpecification in preferences {
+
+                if let key = prefSpecification["Key"] as? String, let value = prefSpecification["DefaultValue"] {
+
+                    //If key doesn't exists in userDefaults then register it, else keep original value
+                    if UserDefaults.standard.value(forKey: key) == nil {
+
+                        UserDefaults.standard.set(value, forKey: key)
+                        NSLog("registerDefaultsFromSettingsBundle: Set following to UserDefaults - (key: \(key), value: \(value), type: \(type(of: value)))")
+                    }
+                }
+            }
+        } else {
+            NSLog("registerDefaultsFromSettingsBundle: Could not find Settings.bundle")
+        }
+    }
+    //    // UserdefinedSettings
+    //    // BackgroundColor : default 0.8
+    //    UserDefaults.standard.set(0.8, forKey: "BackgroundColor")
+    //
+    //    // Grid View : default true
+    //    UserDefaults.standard.set(true, forKey: "GridView")
+    //
+    //    // Measurement Unit: default 0=Metric, 1=Imperial
+    //    UserDefaults.standard.set(0, forKey: "MeasurementUnit")
+    //
+    //    // VoxelSize : default 0.01
+    //    UserDefaults.standard.set(0.01, forKey: "VoxelSize")
+    //
+    
     // -----------------------------
     // [1] Blending (Online Blending)
     // -----------------------------
@@ -141,9 +180,6 @@ func setDefaultsFromSettings() {
     // MeshDecimationFactor : default 0.0
     UserDefaults.standard.set(0.0, forKey: "MeshDecimationFactor")
     
-    // BackgroundColor : default 0.8
-    UserDefaults.standard.set(0.8, forKey: "BackgroundColor")
-    
     // NoiseFilteringRatio : default 0.05
     UserDefaults.standard.set(0.05, forKey: "NoiseFilteringRatio")
     
@@ -160,9 +196,6 @@ func setDefaultsFromSettings() {
     // ----------------------------------------------------
     // Assembling Parameter
     // ----------------------------------------------------
-    
-    // VoxelSize : default 0.01
-    UserDefaults.standard.set(0.01, forKey: "VoxelSize")
 
     // TextureSize : default 8192
     UserDefaults.standard.set(8192, forKey: "TextureSize")
@@ -218,6 +251,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             // 'mapScene'을 루트 뷰 컨트롤러로 설정합니다.
             initialViewController = storyboard.instantiateViewController(withIdentifier: "mapScene")
         }
+        
+        sleep(2)
 
         window?.rootViewController = initialViewController
         window?.makeKeyAndVisible()

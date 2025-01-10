@@ -863,7 +863,7 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
             self.present(alert, animated: true)
         }
     }
-
+    
     func loadAnnotationsFromCSV() {
         let documentsURL = getDocumentDirectory()
         do {
@@ -878,9 +878,7 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
                 let content = try String(contentsOf: fileURL, encoding: .utf8)
                 let lines = content.components(separatedBy: .newlines).filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
-                guard !lines.isEmpty else {
-                    continue
-                }
+                guard !lines.isEmpty else { continue }
 
                 let headerLine = lines[0]
                 let headers = headerLine.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
@@ -909,14 +907,29 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
                     let name = nameIndex != -1 ? fields[nameIndex] : baseFilename
                     let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
 
-                    let messageLines = [
-                        "Project: \(project)",
-                        "Name: \(name)",
-                        String(format: "Latitude: %.6f", latitude),
-                        String(format: "Longitude: %.6f", longitude),
-                        String(format: "Altitude: %.2f m", altitude),
-                        String(format: "Volume: %.3f m³", volume)
-                    ]
+                    let messageLines: [String]
+
+                    if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
+                        messageLines = [
+                            "Project: \(project)",
+                            "Name: \(name)",
+                            String(format: "Latitude: %.6f", latitude),
+                            String(format: "Longitude: %.6f", longitude),
+                            String(format: "Altitude: %.2f m", altitude),
+                            String(format: "Volume: %.3f m³", volume)
+                        ]
+                    } else {
+                        let altitudeInFeet = round(100 * altitude * 3.28084) / 100
+                        let volumeInCubicFeet = round(100 * volume * 35.3147) / 100
+                        messageLines = [
+                            "Project: \(project)",
+                            "Name: \(name)",
+                            String(format: "Latitude: %.6f", latitude),
+                            String(format: "Longitude: %.6f", longitude),
+                            String(format: "Altitude: %.2f ft", altitudeInFeet),
+                            String(format: "Volume: %.3f ft³", volumeInCubicFeet)
+                        ]
+                    }
 
                     let annotation = CustomAnnotation(
                         coordinate: coordinate,
@@ -934,7 +947,6 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
                     let location = CLLocation(latitude: latitude, longitude: longitude)
                     geocoder.reverseGeocodeLocation(location) { [weak self, weak annotation] placemarks, error in
                         guard let self = self, let annotation = annotation else { return }
-                        var addressStrings: [String] = []
                         if let placemark = placemarks?.first {
                             var addressString = ""
                             if let name = placemark.name { addressString += name }
@@ -942,16 +954,31 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
                             if let locality = placemark.locality { addressString += " \(locality)" }
                             if let administrativeArea = placemark.administrativeArea { addressString += " \(administrativeArea)" }
                             if let country = placemark.country { addressString += " \(country)" }
-
-                            let updatedMessage = [
-                                "Address: \(addressString)",
-                                "Project: \(annotation.project ?? "")",
-                                "Name: \(annotation.name ?? "")",
-                                String(format: "Latitude: %.6f", annotation.coordinate.latitude),
-                                String(format: "Longitude: %.6f", annotation.coordinate.longitude),
-                                String(format: "Altitude: %.2f m", annotation.altitude ?? 0.0),
-                                String(format: "Volume: %.3f m³", annotation.volume ?? 0.0),
-                            ].joined(separator: "\n")
+                            
+                            let updatedMessage: String
+                            if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
+                                updatedMessage = [
+                                    "Address: \(addressString)",
+                                    "Project: \(annotation.project ?? "")",
+                                    "Name: \(annotation.name ?? "")",
+                                    String(format: "Latitude: %.6f", annotation.coordinate.latitude),
+                                    String(format: "Longitude: %.6f", annotation.coordinate.longitude),
+                                    String(format: "Altitude: %.2f m", annotation.altitude ?? 0.0),
+                                    String(format: "Volume: %.3f m³", annotation.volume ?? 0.0),
+                                ].joined(separator: "\n")
+                            } else {
+                                let altitudeInFeet = round(100 * (annotation.altitude ?? 0.0) * 3.28084) / 100
+                                let volumeInCubicFeet = round(100 * (annotation.volume ?? 0.0) * 35.3147) / 100
+                                updatedMessage = [
+                                    "Address: \(addressString)",
+                                    "Project: \(annotation.project ?? "")",
+                                    "Name: \(annotation.name ?? "")",
+                                    String(format: "Latitude: %.6f", annotation.coordinate.latitude),
+                                    String(format: "Longitude: %.6f", annotation.coordinate.longitude),
+                                    String(format: "Altitude: %.2f ft", altitudeInFeet),
+                                    String(format: "Volume: %.3f ft³", volumeInCubicFeet),
+                                ].joined(separator: "\n")
+                            }
 
                             DispatchQueue.main.async {
                                 annotation.subtitle = updatedMessage
@@ -968,6 +995,7 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
             showAlert(title: "CSV Load Error", message: error.localizedDescription)
         }
     }
+
 }
 
 // MARK: - MKMapViewDelegate

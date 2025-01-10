@@ -13,15 +13,15 @@
         <scene sceneID="EHf-IW-A2E">
             <objects>
                 <viewController id="01J-lp-oVM" sceneMemberID="viewController">
-                    <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
+                    <view key="view" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" id="Ze5-6b-2t3">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="3crBXeO.gif" adjustsImageSizeForAccessibilityContentSizeCategory="YES" translatesAutoresizingMaskIntoConstraints="NO" id="TNo-z5-pM0">
-                                <rect key="frame" x="21.666666666666657" y="251" width="350" height="350"/>
+                            <imageView clipsSubviews="YES" clearsContextBeforeDrawing="NO" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="MainImage" translatesAutoresizingMaskIntoConstraints="NO" id="TNo-z5-pM0">
+                                <rect key="frame" x="21.666666666666657" y="301" width="350" height="250"/>
                                 <constraints>
                                     <constraint firstAttribute="width" constant="350" id="Lio-4G-f3t"/>
-                                    <constraint firstAttribute="height" constant="350" id="Q5D-zG-PAv"/>
+                                    <constraint firstAttribute="height" constant="250" id="Q5D-zG-PAv"/>
                                 </constraints>
                             </imageView>
                         </subviews>
@@ -39,7 +39,7 @@
         </scene>
     </scenes>
     <resources>
-        <image name="3crBXeO.gif" width="600" height="600"/>
+        <image name="MainImage" width="1333" height="750"/>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
