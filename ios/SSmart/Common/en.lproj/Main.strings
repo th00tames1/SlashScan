@@ -1,0 +1,24 @@
+
+/* Class = "UIButton"; normalTitle = "Close Visualization"; ObjectID = "012-W3-dOS"; */
+"012-W3-dOS.normalTitle" = "Close Visualization";
+
+/* Class = "UILabel"; text = "infoLabel"; ObjectID = "3LQ-Ga-w4w"; */
+"3LQ-Ga-w4w.text" = "infoLabel";
+
+/* Class = "UILabel"; text = "Slashscan requires a LiDAR-capable device, such as the second-generation iPad Pro 11-inch and fourth-generation iPad Pro 12.9-inch."; ObjectID = "4Js-Hw-3QU"; */
+"4Js-Hw-3QU.text" = "Slashscan requires a LiDAR-capable device, such as the second-generation iPad Pro 11-inch and fourth-generation iPad Pro 12.9-inch.";
+
+/* Class = "UIButton"; normalTitle = "Stop Camera"; ObjectID = "9oq-op-NGV"; */
+"9oq-op-NGV.normalTitle" = "Stop Camera";
+
+/* Class = "UILabel"; text = "Toast Label"; ObjectID = "JMv-UE-cvK"; */
+"JMv-UE-cvK.text" = "Toast Label";
+
+/* Class = "UILabel"; text = "Label"; ObjectID = "KlF-4H-k6I"; */
+"KlF-4H-k6I.text" = "Label";
+
+/* Class = "UINavigationItem"; title = "Title"; ObjectID = "Qj2-Il-eAN"; */
+"Qj2-Il-eAN.title" = "Title";
+
+/* Class = "UILabel"; text = "Unsupported Device"; ObjectID = "kZt-ct-4KD"; */
+"kZt-ct-4KD.text" = "Unsupported Device";
