@@ -563,8 +563,8 @@ int Scene::Render(const float * uvsTransformed, glm::mat4 arViewMatrix, glm::mat
                         float distSq = (markerPoses_.front().x() - point.x)*(markerPoses_.front().x() - point.x) +
                                        (markerPoses_.front().y() - point.y)*(markerPoses_.front().y() - point.y) +
                                        (markerPoses_.front().z() - point.z)*(markerPoses_.front().z() - point.z);
-                        // 예: 30cm 이내면 같은 위치로 판단
-                        if(distSq < 0.09f)
+                        // 예: 20cm 이내면 같은 위치로 판단
+                        if(distSq < 0.04f)
                         {
                             // 첫 마커를 재클릭 → 도형 닫힘
                             polygonClosed_ = true;
