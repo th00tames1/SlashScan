@@ -1188,6 +1188,7 @@ void PointCloudDrawable::Render(
                 wireFrame = wireFrame && index_buffers_[2];
                 if(wireFrame)
                 {
+                    glLineWidth(1.5f);
                     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffers_[2]);
                     glDrawElements(GL_LINES, index_buffers_count_[2], GL_UNSIGNED_INT, 0);
                 }

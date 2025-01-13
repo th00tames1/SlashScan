@@ -107,6 +107,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     @IBOutlet weak var recordButton: UIButton!
     @IBOutlet weak var saveButton: UIButton!
     @IBOutlet weak var menuButton: UIButton!
+    @IBOutlet weak var manualButton: UIButton!
     @IBOutlet weak var viewButton: UIButton!
     @IBOutlet weak var libraryButton: UIButton!
     @IBOutlet weak var projectButton: UIButton!
@@ -275,8 +276,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         DispatchQueue.main.async {
             self.showProjectSelectionPopup(cancel: false)
         }
-        
-        setupManualView()
     }
     
     var selectedProjectFolderURL: URL? {
@@ -303,7 +302,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         }
         
         let cancelAction = UIAlertAction(title: "Cancel", style: .destructive) { _ in
-            self.dismissProjectPopup()
+            
         }
         
         if #available(iOS 15.0, *) {
@@ -327,15 +326,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         self.present(alert, animated: true)
     }
     
-    // 프로젝트 팝업 종료 시 호출
-    func dismissProjectPopup() {
-        isProjectPopupShowing = false
-        // 현재 상태가 WELCOME이면 매뉴얼 다시 표시
-        if mState == .STATE_WELCOME {
-            manualView?.isHidden = false
-        }
-    }
-    
     // New Project 폴더명 입력 팝업
     func showNewProjectNameInputPopup() {
         let alert = UIAlertController(title: "New Project", message: "Enter project folder name", preferredStyle: .alert)
@@ -350,14 +340,11 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                 // 폴더명을 입력하지 않은 경우 다시 입력받거나 에러 처리
                 self.showToast(message: "Folder name cannot be empty.", seconds: 2)
             }
-            self.dismissProjectPopup()
         }
         
         let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { _ in
             if self.selectedProjectFolderURL == nil {
                 self.showProjectSelectionPopup(cancel: false)
-            } else {
-                self.dismissProjectPopup()
             }
         }
         
@@ -377,12 +364,10 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             folders = items.filter { $0.hasDirectoryPath }
         } catch {
             print("Error reading directories: \(error)")
-            self.dismissProjectPopup()
         }
         
         if folders.isEmpty {
             self.showToast(message: "No existing project folders found.", seconds: 2)
-            self.dismissProjectPopup()
             return
         }
         
@@ -392,7 +377,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             let folderName = folderURL.lastPathComponent
             let folderAction = UIAlertAction(title: folderName, style: .default) { _ in
                 
-                self.dismissProjectPopup()
                 // 선택한 폴더로 getDocumentDirectory 설정
                 self.selectedProjectFolderURL = folderURL
                 if let folderURL = self.selectedProjectFolderURL {
@@ -412,8 +396,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { _ in
             if self.selectedProjectFolderURL == nil {
                 self.showProjectSelectionPopup(cancel: false)
-            } else {
-                self.dismissProjectPopup()
             }
         }
         alert.addAction(cancelAction)
@@ -466,104 +448,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         }
     }
 
-    private func setupManualView() {
-        // manualView 생성
-        let manualView = UIView()
-        manualView.backgroundColor = .white
-        manualView.layer.cornerRadius = 10
-        manualView.layer.masksToBounds = true
-        manualView.translatesAutoresizingMaskIntoConstraints = false
-        
-        self.view.addSubview(manualView)
-        self.manualView = manualView
-        
-        // manualView를 화면 가운데에 배치
-        let deviceWidth: CGFloat = UIDevice.current.userInterfaceIdiom == .phone ? 250 : 300
-
-        NSLayoutConstraint.activate([
-            manualView.centerXAnchor.constraint(equalTo: self.view.centerXAnchor),
-            manualView.centerYAnchor.constraint(equalTo: self.view.centerYAnchor),
-            manualView.widthAnchor.constraint(equalToConstant: deviceWidth),
-            manualView.heightAnchor.constraint(lessThanOrEqualToConstant: 400)
-        ])
-    
-        let verticalStack = UIStackView()
-        verticalStack.axis = .vertical
-        verticalStack.alignment = .fill
-        verticalStack.distribution = .equalSpacing
-        verticalStack.spacing = 30
-        verticalStack.translatesAutoresizingMaskIntoConstraints = false
-        
-        manualView.addSubview(verticalStack)
-        
-        NSLayoutConstraint.activate([
-            verticalStack.topAnchor.constraint(equalTo: manualView.topAnchor, constant: 20),
-            verticalStack.leadingAnchor.constraint(equalTo: manualView.leadingAnchor, constant: 20),
-            verticalStack.trailingAnchor.constraint(equalTo: manualView.trailingAnchor, constant: -20),
-            verticalStack.bottomAnchor.constraint(equalTo: manualView.bottomAnchor, constant: -20)
-        ])
-
-        // 예시용 4단계 생성
-        let stepView1 = createManualStep(
-            image: UIImage(systemName: "plus.circle.fill")!.withRenderingMode(.alwaysTemplate),
-            text: "Step 1: Press the blue button on the right to prepare recording",
-            tintColor: .systemBlue
-        )
-        verticalStack.addArrangedSubview(stepView1)
-
-        let stepView2 = createManualStep(
-            image: UIImage(systemName: "record.circle")!.withRenderingMode(.alwaysTemplate),
-            text: "Step 2: Press the red button to start recording.",
-            tintColor: .systemRed
-        )
-        verticalStack.addArrangedSubview(stepView2)
-
-        let stepView3 = createManualStep(
-            image: UIImage(systemName: "cube.transparent")!.withRenderingMode(.alwaysTemplate),
-            text: "Step 3: Press the yellow button to crop and measure the acquired data.",
-            tintColor: .systemYellow
-        )
-        verticalStack.addArrangedSubview(stepView3)
-
-        let stepView4 = createManualStep(
-            image: UIImage(systemName: "map.circle")!.withRenderingMode(.alwaysTemplate),
-            text: "Open the map to view and manage the acquired data.",
-            tintColor: .systemGreen
-        )
-        verticalStack.addArrangedSubview(stepView4)
-        
-        // 초기에는 STATE_WELCOME 아닐 경우 hidden 처리하기 위해 숨겨둠
-        manualView.isHidden = true
-    }
-
-    private func createManualStep(image: UIImage, text: String, tintColor: UIColor) -> UIView {
-        let horizontalStack = UIStackView()
-        horizontalStack.axis = .horizontal
-        horizontalStack.alignment = .center
-        horizontalStack.spacing = 10
-        
-        let imageView = UIImageView(image: image)
-        imageView.contentMode = .scaleAspectFit
-        imageView.tintColor = tintColor // 이미지 색상 변경
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            imageView.widthAnchor.constraint(equalToConstant: 40),
-            imageView.heightAnchor.constraint(equalToConstant: 40)
-        ])
-        
-        let label = UILabel()
-        label.text = text
-        label.numberOfLines = 0
-        label.textColor = .black
-        label.font = UIFont.systemFont(ofSize: 14)
-        
-        horizontalStack.addArrangedSubview(imageView)
-        horizontalStack.addArrangedSubview(label)
-        
-        return horizontalStack
-    }
-
-    
     func showEditProjectPopup() {
         isProjectPopupShowing = true
 
@@ -576,13 +460,11 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             folders = items.filter { $0.hasDirectoryPath }
         } catch {
             print("Error reading directories: \(error)")
-            self.dismissProjectPopup()
             return
         }
 
         if folders.isEmpty {
             self.showToast(message: "No existing project folders found.", seconds: 2)
-            self.dismissProjectPopup()
             return
         }
 
@@ -598,7 +480,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         }
 
         let cancelAction = UIAlertAction(title: "Cancel", style: .destructive) { _ in
-            self.dismissProjectPopup()
+            
         }
         alert.addAction(cancelAction)
 
@@ -1406,21 +1288,21 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                         print("Settings opened: \(success)")
                     })
                 }
-            }),
-            UIAction(title: "Restore All Default Settings", attributes: actionSettingsEnabled ? [] : .disabled, state: .off, handler: { _ in
-                
-                let ac = UIAlertController(title: "Reset All Default Settings", message: "Do you want to reset all settings to default?", preferredStyle: .alert)
-                ac.addAction(UIAlertAction(title: "Yes", style: .default, handler: { _ in
-                    let notificationCenter = NotificationCenter.default
-                    notificationCenter.removeObserver(self)
-                    UserDefaults.standard.reset()
-                    self.registerSettingsBundle()
-                    self.updateDisplayFromDefaults();
-                    notificationCenter.addObserver(self, selector: #selector(self.defaultsChanged), name: UserDefaults.didChangeNotification, object: nil)
-                }))
-                ac.addAction(UIAlertAction(title: "No", style: .cancel, handler: nil))
-                self.present(ac, animated: true)
-             })
+            })
+//            UIAction(title: "Restore All Default Settings", attributes: actionSettingsEnabled ? [] : .disabled, state: .off, handler: { _ in
+//                
+//                let ac = UIAlertController(title: "Reset All Default Settings", message: "Do you want to reset all settings to default?", preferredStyle: .alert)
+//                ac.addAction(UIAlertAction(title: "Yes", style: .default, handler: { _ in
+//                    let notificationCenter = NotificationCenter.default
+//                    notificationCenter.removeObserver(self)
+//                    UserDefaults.standard.reset()
+//                    self.registerSettingsBundle()
+//                    self.updateDisplayFromDefaults();
+//                    notificationCenter.addObserver(self, selector: #selector(self.defaultsChanged), name: UserDefaults.didChangeNotification, object: nil)
+//                }))
+//                ac.addAction(UIAlertAction(title: "No", style: .cancel, handler: nil))
+//                self.present(ac, animated: true)
+//             })
         ])
 
         menuButton.menu = UIMenu(title: "", children: [fileMenu, settingsMenu])
@@ -3067,16 +2949,13 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
 
         let selectAction = UIAlertAction(title: "Select", style: .default) { [weak self] (action) in
             guard let self = self else { return }
-            
-            // 인덱스 유효성 검사
+
             if self.currentDatabaseIndex >= 0 && self.currentDatabaseIndex < self.databases.count {
                 let fileUrl = self.databases[self.currentDatabaseIndex]
                 self.openDatabase(fileUrl: fileUrl)
             } else {
-                // 오류 팝업 메시지 생성
                 let errorAlert = UIAlertController(title: "Index Error", message: "Try Again.", preferredStyle: .alert)
-                
-                // 현재 뷰 컨트롤러에서 오류 팝업 표시
+
                 self.present(errorAlert, animated: true, completion: nil)
             }
         }
@@ -3105,21 +2984,21 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         updateState(state: .STATE_MAPPING)
     }
 
-    @IBAction func switchAction(_ sender: UIButton) {
-        if(viewMode == 0){
-            self.setMeshRendering(viewMode: 2)
+//    @IBAction func switchAction(_ sender: UIButton) {
+//        if(viewMode == 0){
+//            self.setMeshRendering(viewMode: 2)
 //            infoLabel.text = "Mesh View"
-        }
+//        }
 //        else if(viewMode == 1){
 //            self.setMeshRendering(viewMode: 2)
 //            print("viewmode 2")
 //            infoLabel.text = "Mesh View"
 //        }
-        else {
-            self.setMeshRendering(viewMode: 0)
+//        else {
+//            self.setMeshRendering(viewMode: 0)
 //            infoLabel.text = "Point Cloud View"
-        }
-    }
+//        }
+//    }
     
     @IBAction func closeVisualizationAction(_ sender: UIButton) {
         closeVisualization()
@@ -3129,10 +3008,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     @IBAction func stopCameraAction(_ sender: UIButton) {
         appMovedToBackground();
     }
-    
-//    @IBAction func exportOBJPLYAction(_ sender: UIButton) {
-//        exportOBJPLY()
-//    }
     
     @IBAction func libraryAction(_ sender: UIButton) {
         openLibrary();
@@ -3203,9 +3078,9 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         else{
             self.showToast(message: "Measurement Mode ON", seconds: 3)
             editButton.tintColor = .systemRed
-            rtabmap?.setGridVisible(visible: false)
             self.updateState(state: .STATE_EDIT)
             self.rtabmap!.setWireframe(enabled: true)
+            rtabmap?.setGridVisible(visible: false)
             if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
                 self.titleContent.text = "Volume : 0 m³"
             }
@@ -3268,6 +3143,18 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             let name = (databasePath.lastPathComponent as NSString).deletingPathExtension
             self.updateVolumeInCSV(fileName: csvFileName, name: name, volume: showvolume)
         }
+    }
+    @IBAction func manualButtonTapped(_ sender: UIButton) {
+        // 팝업 뷰컨트롤러 인스턴스화
+        let popupVC = ManualPopupViewController()
+        
+        // 팝업 스타일 설정 (overFullScreen, fullScreen 등)
+        popupVC.modalPresentationStyle = .overFullScreen
+        // 전환 애니메이션 (옵션)
+        popupVC.modalTransitionStyle = .crossDissolve
+        
+        // 모달 프레젠테이션
+        self.present(popupVC, animated: true, completion: nil)
     }
 }
 
@@ -3496,5 +3383,135 @@ class PolygonOverlayView: UIView {
         UIColor.systemPink.setStroke()
         path.lineWidth = 2.0
         path.stroke()
+    }
+}
+
+final class ManualPopupViewController: UIViewController {
+
+    private weak var manualView: UIView?
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        view.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+        setupManualView()
+    }
+
+    private func setupManualView() {
+        let manualView = UIView()
+        manualView.backgroundColor = .white
+        manualView.layer.cornerRadius = 10
+        manualView.layer.masksToBounds = true
+        manualView.translatesAutoresizingMaskIntoConstraints = false
+        
+        self.view.addSubview(manualView)
+        self.manualView = manualView
+
+        let deviceWidth: CGFloat = UIDevice.current.userInterfaceIdiom == .phone ? 200 : 350
+
+        NSLayoutConstraint.activate([
+            manualView.centerXAnchor.constraint(equalTo: self.view.centerXAnchor),
+            manualView.centerYAnchor.constraint(equalTo: self.view.centerYAnchor),
+            manualView.widthAnchor.constraint(equalToConstant: deviceWidth),
+            manualView.heightAnchor.constraint(lessThanOrEqualToConstant: 400)
+        ])
+
+        let verticalStack = UIStackView()
+        verticalStack.axis = .vertical
+        verticalStack.alignment = .fill
+        verticalStack.distribution = .equalSpacing
+        verticalStack.spacing = 30
+        verticalStack.translatesAutoresizingMaskIntoConstraints = false
+        
+        manualView.addSubview(verticalStack)
+        
+        NSLayoutConstraint.activate([
+            verticalStack.topAnchor.constraint(equalTo: manualView.topAnchor, constant: 20),
+            verticalStack.leadingAnchor.constraint(equalTo: manualView.leadingAnchor, constant: 20),
+            verticalStack.trailingAnchor.constraint(equalTo: manualView.trailingAnchor, constant: -20),
+            verticalStack.bottomAnchor.constraint(equalTo: manualView.bottomAnchor, constant: -20)
+        ])
+
+        let isPhone = UIDevice.current.userInterfaceIdiom == .phone
+        let imageSize: CGFloat = isPhone ? 30 : 40 // iPhone일 경우 10 감소
+        let fontSize: CGFloat = isPhone ? 12 : 14  // iPhone일 경우 2 감소
+
+        let stepView1 = createManualStep(
+            image: UIImage(systemName: "plus.circle.fill")!.withRenderingMode(.alwaysTemplate),
+            text: "Step 1: Press the blue button on the right to prepare recording",
+            tintColor: .systemBlue,
+            imageSize: imageSize,
+            fontSize: fontSize
+        )
+        verticalStack.addArrangedSubview(stepView1)
+
+        let stepView2 = createManualStep(
+            image: UIImage(systemName: "record.circle")!.withRenderingMode(.alwaysTemplate),
+            text: "Step 2: Press the red button to start recording.",
+            tintColor: .systemRed,
+            imageSize: imageSize,
+            fontSize: fontSize
+        )
+        verticalStack.addArrangedSubview(stepView2)
+
+        let stepView3 = createManualStep(
+            image: UIImage(systemName: "cube.transparent")!.withRenderingMode(.alwaysTemplate),
+            text: "Step 3: Press the yellow button to crop and measure the acquired data.",
+            tintColor: .systemYellow,
+            imageSize: imageSize,
+            fontSize: fontSize
+        )
+        verticalStack.addArrangedSubview(stepView3)
+
+        let stepView4 = createManualStep(
+            image: UIImage(systemName: "map.circle")!.withRenderingMode(.alwaysTemplate),
+            text: "Open the map to view and manage the acquired data.",
+            tintColor: .systemGreen,
+            imageSize: imageSize,
+            fontSize: fontSize
+        )
+        verticalStack.addArrangedSubview(stepView4)
+
+        let closeButton = UIButton(type: .system)
+        closeButton.setTitle("Cancel", for: .normal)  // "Close"로 해도 무방
+        closeButton.titleLabel?.font = UIFont.systemFont(ofSize: fontSize)
+        closeButton.addTarget(self, action: #selector(closeManual), for: .touchUpInside)
+        verticalStack.addArrangedSubview(closeButton)
+    }
+
+    @objc private func closeManual() {
+        self.dismiss(animated: true, completion: nil)
+    }
+
+    private func createManualStep(image: UIImage,
+                                  text: String,
+                                  tintColor: UIColor,
+                                  imageSize: CGFloat,
+                                  fontSize: CGFloat) -> UIView {
+        
+        let horizontalStack = UIStackView()
+        horizontalStack.axis = .horizontal
+        horizontalStack.alignment = .center
+        horizontalStack.spacing = 10
+        
+        let imageView = UIImageView(image: image)
+        imageView.contentMode = .scaleAspectFit
+        imageView.tintColor = tintColor
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            imageView.widthAnchor.constraint(equalToConstant: imageSize),
+            imageView.heightAnchor.constraint(equalToConstant: imageSize)
+        ])
+        
+        let label = UILabel()
+        label.text = text
+        label.numberOfLines = 0
+        label.textColor = .black
+        label.font = UIFont.systemFont(ofSize: fontSize)
+        
+        horizontalStack.addArrangedSubview(imageView)
+        horizontalStack.addArrangedSubview(label)
+        
+        return horizontalStack
     }
 }

@@ -150,6 +150,7 @@
                                         <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <state key="normal">
                                             <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                            <color key="titleShadowColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                             <imageReference key="backgroundImage" image="document.fill" catalog="system"/>
                                         </state>
                                         <connections>
@@ -165,6 +166,7 @@
                                         <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <state key="normal" backgroundImage="folder.fill" catalog="system">
                                             <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                            <color key="titleShadowColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         </state>
                                         <connections>
                                             <action selector="libraryAction:" destination="zah-iI-EPt" eventType="touchUpInside" id="2Ms-DY-14N"/>
@@ -177,17 +179,33 @@
                                             <constraint firstAttribute="width" constant="40" id="pLI-ns-KHQ"/>
                                         </constraints>
                                         <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                        <state key="normal" backgroundImage="gearshape.fill" catalog="system"/>
+                                        <state key="normal" backgroundImage="gearshape.fill" catalog="system">
+                                            <color key="titleShadowColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        </state>
                                     </button>
                                 </subviews>
                             </stackView>
+                            <button contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oLm-dp-ZcO" userLabel="ManualButton">
+                                <rect key="frame" x="333" y="129.66666666666666" width="40" height="38.666666666666657"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="40" id="2yj-6X-02K"/>
+                                    <constraint firstAttribute="width" constant="40" id="onE-jx-QZo"/>
+                                </constraints>
+                                <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <state key="normal" backgroundImage="questionmark.circle" catalog="system">
+                                    <color key="titleShadowColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
+                                <connections>
+                                    <action selector="manualButtonTapped:" destination="zah-iI-EPt" eventType="touchUpInside" id="YTa-FK-Acm"/>
+                                </connections>
+                            </button>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="wordWrap" baselineAdjustment="alignBaselines" minimumFontSize="10" translatesAutoresizingMaskIntoConstraints="NO" id="KlF-4H-k6I">
-                                <rect key="frame" x="16" y="79" width="31" height="14.333333333333329"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                                <rect key="frame" x="15.999999999999998" y="79" width="26.333333333333321" height="12"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="10"/>
                                 <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="012-W3-dOS" userLabel="CloseVisualization">
+                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="012-W3-dOS" userLabel="CloseVisualization">
                                 <rect key="frame" x="111.33333333333333" y="772" width="170.33333333333337" height="22"/>
                                 <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <state key="normal" title="Close Visualization" image="xmark.square" catalog="system">
@@ -197,7 +215,7 @@
                                     <action selector="closeVisualizationAction:" destination="zah-iI-EPt" eventType="touchUpInside" id="DqP-oy-XPe"/>
                                 </connections>
                             </button>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="9oq-op-NGV" userLabel="StopCamera">
+                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="9oq-op-NGV" userLabel="StopCamera">
                                 <rect key="frame" x="134.33333333333334" y="771" width="124.33333333333334" height="22"/>
                                 <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <state key="normal" title="Stop Camera" image="xmark.square" catalog="system">
@@ -227,13 +245,13 @@
                                 <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="infoLabel" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="3LQ-Ga-w4w">
+                            <label hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="infoLabel" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="3LQ-Ga-w4w">
                                 <rect key="frame" x="161.66666666666666" y="168.66666666666666" width="69.666666666666657" height="20.333333333333343"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="center" contentVerticalAlignment="center" usesAttributedText="YES" borderStyle="roundedRect" minimumFontSize="18" translatesAutoresizingMaskIntoConstraints="NO" id="9hW-Fk-wkN">
+                            <textField hidden="YES" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="center" contentVerticalAlignment="center" usesAttributedText="YES" borderStyle="roundedRect" minimumFontSize="18" translatesAutoresizingMaskIntoConstraints="NO" id="9hW-Fk-wkN">
                                 <rect key="frame" x="146.66666666666666" y="119" width="100" height="34"/>
                                 <constraints>
                                     <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="100" id="9hM-1U-dtk"/>
@@ -266,9 +284,9 @@
                                 </subviews>
                             </stackView>
                             <stackView opaque="NO" contentMode="scaleToFill" spacing="40" translatesAutoresizingMaskIntoConstraints="NO" id="ohC-Ys-aa2" userLabel="editstackview">
-                                <rect key="frame" x="96.666666666666686" y="698" width="200" height="40"/>
+                                <rect key="frame" x="196.66666666666666" y="718" width="0.0" height="0.0"/>
                                 <subviews>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Lqm-Je-rDs" userLabel="cropButton">
+                                    <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Lqm-Je-rDs" userLabel="cropButton">
                                         <rect key="frame" x="0.0" y="1.3333333333333321" width="40" height="38.666666666666671"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="40" id="AbQ-Aw-LEY"/>
@@ -278,13 +296,14 @@
                                         <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <state key="normal" backgroundImage="scissors" catalog="system">
                                             <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                            <color key="titleShadowColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         </state>
                                         <connections>
                                             <action selector="cropButtonTapped:" destination="zah-iI-EPt" eventType="touchUpInside" id="LmL-bL-gG1"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="26F-k9-08O" userLabel="cancelButton">
-                                        <rect key="frame" x="79.999999999999986" y="0.66666666666666785" width="40" height="38.666666666666657"/>
+                                    <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="26F-k9-08O" userLabel="cancelButton">
+                                        <rect key="frame" x="0.0" y="0.66666666666666785" width="40" height="38.666666666666657"/>
                                         <constraints>
                                             <constraint firstAttribute="width" constant="40" id="AnK-Zj-ZMm"/>
                                             <constraint firstAttribute="height" constant="40" id="Zmm-oT-62r"/>
@@ -292,19 +311,22 @@
                                         <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <state key="normal" backgroundImage="xmark.circle" catalog="system">
                                             <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                            <color key="titleShadowColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         </state>
                                         <connections>
                                             <action selector="cancelButtonTapped:" destination="zah-iI-EPt" eventType="touchUpInside" id="okC-xD-yXD"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="L25-8c-Ju7" userLabel="editsaveButton">
-                                        <rect key="frame" x="160" y="-3.5527136788005009e-15" width="40" height="40.333333333333329"/>
+                                    <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="L25-8c-Ju7" userLabel="editsaveButton">
+                                        <rect key="frame" x="0.0" y="-3.5527136788005009e-15" width="40" height="40.333333333333329"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="40" id="WCm-LH-9Um"/>
                                             <constraint firstAttribute="width" constant="40" id="iI7-od-9mL"/>
                                         </constraints>
                                         <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                        <state key="normal" backgroundImage="cube.transparent.fill" catalog="system"/>
+                                        <state key="normal" backgroundImage="cube.transparent.fill" catalog="system">
+                                            <color key="titleShadowColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        </state>
                                         <connections>
                                             <action selector="editsaveButtonTapped:" destination="zah-iI-EPt" eventType="touchUpInside" id="EUx-wJ-vh3"/>
                                         </connections>
@@ -314,6 +336,7 @@
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="qAR-pI-uT2"/>
                         <constraints>
+                            <constraint firstItem="oLm-dp-ZcO" firstAttribute="centerX" secondItem="ozY-dg-YOd" secondAttribute="trailing" constant="-20" id="0A9-C7-S1Z"/>
                             <constraint firstItem="KlF-4H-k6I" firstAttribute="leading" secondItem="qAR-pI-uT2" secondAttribute="leading" constant="16" id="14l-HO-Yqo"/>
                             <constraint firstItem="9hW-Fk-wkN" firstAttribute="top" secondItem="ozY-dg-YOd" secondAttribute="bottom" constant="10" id="2Fc-h2-E3O"/>
                             <constraint firstItem="ohC-Ys-aa2" firstAttribute="centerY" secondItem="qAR-pI-uT2" secondAttribute="bottom" constant="-100" id="2bu-fj-wOf"/>
@@ -337,6 +360,7 @@
                             <constraint firstItem="9hW-Fk-wkN" firstAttribute="top" secondItem="3LQ-Ga-w4w" secondAttribute="bottom" constant="-70" id="n8c-ru-VIm"/>
                             <constraint firstItem="qAR-pI-uT2" firstAttribute="trailing" secondItem="ozY-dg-YOd" secondAttribute="trailing" constant="20" id="ov4-d2-OMy"/>
                             <constraint firstItem="3LQ-Ga-w4w" firstAttribute="centerX" secondItem="Jj4-ow-MwD" secondAttribute="centerX" id="rZG-Fn-d0C"/>
+                            <constraint firstItem="oLm-dp-ZcO" firstAttribute="centerY" secondItem="ozY-dg-YOd" secondAttribute="bottom" constant="40" id="u8G-CR-fWt"/>
                             <constraint firstItem="Jj4-ow-MwD" firstAttribute="centerY" secondItem="sqF-4e-2HU" secondAttribute="centerY" id="vmc-4u-BtF"/>
                         </constraints>
                         <connections>
@@ -352,6 +376,7 @@
                         <outlet property="editsaveButton" destination="L25-8c-Ju7" id="tbT-1G-rT2"/>
                         <outlet property="infoLabel" destination="3LQ-Ga-w4w" id="wr1-wm-3k9"/>
                         <outlet property="libraryButton" destination="yQU-H4-QFu" id="Rt5-LM-SLY"/>
+                        <outlet property="manualButton" destination="oLm-dp-ZcO" id="Nor-ec-tyc"/>
                         <outlet property="mapButton" destination="sxm-Ez-fgM" id="B0n-0V-hyv"/>
                         <outlet property="menuButton" destination="y53-OI-O76" id="v3g-JB-SsY"/>
                         <outlet property="projectButton" destination="9kh-4C-KyP" id="OLZ-KQ-wDC"/>
@@ -436,6 +461,7 @@
         <image name="gearshape.fill" catalog="system" width="128" height="123"/>
         <image name="map.circle.fill" catalog="system" width="128" height="123"/>
         <image name="plus.circle.fill" catalog="system" width="128" height="123"/>
+        <image name="questionmark.circle" catalog="system" width="128" height="123"/>
         <image name="record.circle" catalog="system" width="128" height="123"/>
         <image name="scissors" catalog="system" width="128" height="94"/>
         <image name="square.and.arrow.down" catalog="system" width="112" height="128"/>
@@ -446,25 +472,25 @@
             <color white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="secondaryLabelColor">
-            <color red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.23529411764705882" green="0.23529411764705882" blue="0.2627450980392157" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemBlueColor">
-            <color red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.0" green="0.47843137254901963" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGreenColor">
-            <color red="0.20392156859999999" green="0.78039215689999997" blue="0.34901960780000002" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.20392156862745098" green="0.7803921568627451" blue="0.34901960784313724" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemRedColor">
-            <color red="1" green="0.23137254900000001" blue="0.18823529410000001" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="1" green="0.23137254901960785" blue="0.18823529411764706" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemYellowColor">
             <color red="1" green="0.80000000000000004" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="tertiaryLabelColor">
-            <color red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.29803921570000003" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.23529411764705882" green="0.23529411764705882" blue="0.2627450980392157" alpha="0.29803921568627451" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>
