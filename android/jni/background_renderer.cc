@@ -74,8 +74,7 @@ const std::string kFragmentShader =
     "uniform bool uRedUnknown;\n"
 	"void main() {\n"
 	"    vec4 sample = texture2D(sTexture, v_TexCoord);\n"
-	"    float grey = 0.21 * sample.r + 0.71 * sample.g + 0.07 * sample.b;\n"
-	"    gl_FragColor = vec4(grey, uRedUnknown?0.0:grey, uRedUnknown?0.0:grey, 0.5);\n"
+	"    gl_FragColor = vec4(sample.r, sample.g, sample.b, 0.7);\n"
 	"}\n";
 
 const std::string kFragmentShaderBlending =

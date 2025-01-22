@@ -105,7 +105,7 @@ Scene::Scene() :
         screenHeight_(0),
         doubleTapOn_(false),
         croppingOn_(false),
-        lineWidth_(10.0f),
+        lineWidth_(12.0f),
         polygonClosed_(false)
 {
     depthTexture_ = 0;
@@ -719,9 +719,11 @@ int Scene::Render(const float * uvsTransformed, glm::mat4 arViewMatrix, glm::mat
     {
         glUseProgram(graph_shader_program_);
 
-        // 원하는 선 색/두께
         GLint colorHandle = glGetUniformLocation(graph_shader_program_, "color");
-        glUniform3f(colorHandle, 1.0f, 1.0f, 1.0f);
+//        glUniform3f(colorHandle, 1.0f, 0.0f, 0.0f); //파란색 bgr
+//        glUniform3f(colorHandle, 0.0f, 1.0f, 0.0f); //초록색
+//        glUniform3f(colorHandle, 0.0f, 0.0f, 1.0f); //빨간색
+        glUniform3f(colorHandle, 0.6f, 0.2f, 1.0f); // 핑크색
         glLineWidth(lineWidth_);
 
         // MVP

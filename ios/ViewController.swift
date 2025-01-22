@@ -99,6 +99,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     private var manualView: UIView?
     private var isProjectPopupShowing = false
     private var isCropping: Bool = false
+    private var wasInitializing = false
     
     private var editRectStart: CGPoint?
     private var editRectCurrent: CGRect?
@@ -130,9 +131,9 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     //    }
     //    @IBOutlet weak var orthoGridSlider: UISlider!
     
-    let RTABMAP_TMP_DB = "slashscan.tmp.db"
-    let RTABMAP_RECOVERY_DB = "slashscan.tmp.recovery.db"
-    let RTABMAP_EXPORT_DIR = "Export"
+    let SlashScan_TMP_DB = "slashscan.tmp.db"
+    let SlashScan_RECOVERY_DB = "slashscan.tmp.recovery.db"
+    let SlashScan_EXPORT_DIR = "Export"
 
     func getDocumentDirectory() -> URL {
         if let projectPath = UserDefaults.standard.string(forKey: "SelectedProjectFolder"),
@@ -146,11 +147,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         }
         // 프로젝트 폴더가 없거나 설정되지 않았을 경우 기본 DocumentDirectory 반환
         return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    }
-
-    
-    func getTmpDirectory() -> URL {
-       return URL(fileURLWithPath: NSTemporaryDirectory())
     }
     
     @objc func defaultsChanged(){
@@ -976,9 +972,9 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         
         switch mState {
         case .STATE_CAMERA:
-            projectButton.isHidden = !mHudVisible
-            libraryButton.isHidden = !mHudVisible
-            menuButton.isHidden = !mHudVisible
+            projectButton.isHidden = true
+            libraryButton.isHidden = true
+            menuButton.isHidden = true
             viewButton.isHidden = !mHudVisible
             startButton.isHidden = true
             recordButton.isHidden = false
@@ -991,7 +987,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = viewMode != 0 || !mHudVisible
             titleContent.isHidden = true
-            infoLabel.isHidden = !mHudVisible
+            infoLabel.isHidden = true
             actionNewScanEnabled = !mDataRecording
             actionNewDataRecording = mDataRecording
             actionSaveEnabled = false
@@ -1015,7 +1011,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             mapButton.isHidden = true
             closeVisualizationButton.isHidden = true
             stopCameraButton.isHidden = true
-            infoLabel.isHidden = !mHudVisible
+            infoLabel.isHidden = true
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = viewMode != 0 || !mHudVisible
             titleContent.isHidden = true
@@ -1382,15 +1378,26 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         return !mHudVisible
     }
 
-    //This is called when a new frame has been updated.
-    func session(_ session: ARSession, didUpdate frame: ARFrame)
-    {
+    func session(_ session: ARSession, didUpdate frame: ARFrame) {
         var status = ""
         var accept = false
-        
+
         switch frame.camera.trackingState {
         case .normal:
             accept = true
+            // 초기화 상태가 끝나 .normal 상태로 전환된 경우
+            if wasInitializing {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    if self.mState != .STATE_IDLE &&
+                        self.mState != .STATE_VISUALIZING &&
+                        self.mState != .STATE_WELCOME &&
+                        self.mState != .STATE_MAPPING {
+                        self.recordButton.isHidden = false
+                        self.showToast(message: "Ready to Scan!", seconds: 5)
+                    }
+                    self.wasInitializing = false
+                }
+            }
         case .notAvailable:
             status = "Tracking not available"
         case .limited(.excessiveMotion):
@@ -1400,31 +1407,32 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             accept = true
             status = "Avoid Featureless Surfaces"
         case .limited(.initializing):
-            status = "Initializing"
+            status = "Please Wait. System Initializing..."
+            recordButton.isHidden = true
+            wasInitializing = true
         case .limited(.relocalizing):
             status = "Relocalizing"
-        default:
+        @unknown default:
             status = "Unknown tracking state"
         }
-        
+
         mLastLightEstimate = frame.lightEstimate?.ambientIntensity
-        
+
         if !status.isEmpty && mLastLightEstimate != nil && mLastLightEstimate! < 100 && accept {
             status = "Camera Is Occluded Or Lighting Is Too Dark"
         }
 
-        if let rotation = UIApplication.shared.windows.first?.windowScene?.interfaceOrientation
-        {
+        if let rotation = UIApplication.shared.windows.first?.windowScene?.interfaceOrientation {
             rtabmap?.postOdometryEvent(frame: frame, orientation: rotation, viewport: self.view.frame.size)
         }
-        
+
         if !status.isEmpty {
             DispatchQueue.main.async {
                 self.showToast(message: status, seconds: 3)
             }
         }
     }
-    
+
     // This is called when a session fails.
     func session(_ session: ARSession, didFailWithError error: Error) {
         // Present an error message to the user.
@@ -1871,7 +1879,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         mMapNodes = 0;
 
         self.openedDatabasePath = nil
-        let tmpDatabase = self.getDocumentDirectory().appendingPathComponent(self.RTABMAP_TMP_DB)
+        let tmpDatabase = self.getDocumentDirectory().appendingPathComponent(self.SlashScan_TMP_DB)
         let inMemory = UserDefaults.standard.bool(forKey: "DatabaseInMemory")
         if(!(self.mState == State.STATE_CAMERA || self.mState == State.STATE_MAPPING) &&
            FileManager.default.fileExists(atPath: tmpDatabase.path) &&
@@ -2350,7 +2358,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             alert.addAction(yes)
             self.present(alert, animated: true, completion: nil)
             do {
-                let tmpDatabase = self.getDocumentDirectory().appendingPathComponent(self.RTABMAP_TMP_DB)
+                let tmpDatabase = self.getDocumentDirectory().appendingPathComponent(self.SlashScan_TMP_DB)
                 try FileManager.default.removeItem(at: tmpDatabase)
             }
             catch {
@@ -2611,6 +2619,15 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         self.present(activityViewController, animated: true, completion: nil)
     }
     
+    private func formatVolume(_ volume: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        // 필요한 경우 최소/최대 소수점 자릿수도 설정
+        // formatter.maximumFractionDigits = 2
+        // formatter.minimumFractionDigits = 0
+        return formatter.string(for: volume) ?? "\(volume)"
+    }
+    
     // MARK: - File OPEN
     func openDatabase(fileUrl: URL) {
         
@@ -2622,7 +2639,11 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         let fileName: String = self.openedDatabasePath!.lastPathComponent
         infoLabel.text = fileName
         
-        let progressDialog = UIAlertController(title: "Loading", message: String(format: "Loading \"%@\". Please wait while point clouds and/or meshes are created...", fileName), preferredStyle: .alert)
+        let progressDialog = UIAlertController(
+            title: "Loading",
+            message: String(format: "Loading \"%@\". Please wait while point clouds and/or meshes are created...", fileName),
+            preferredStyle: .alert
+        )
         
         // 사용자에게 진행 상황을 표시
         self.present(progressDialog, animated: true)
@@ -2630,8 +2651,13 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         updateState(state: .STATE_PROCESSING)
         var status = 0
         DispatchQueue.background(background: {
-            self.optimizedGraphShown = true // 데이터베이스를 열 때 항상 true로 초기화
-            status = self.rtabmap!.openDatabase(databasePath: self.openedDatabasePath!.path, databaseInMemory: true, optimize: false, clearDatabase: false)
+            self.optimizedGraphShown = true
+            status = self.rtabmap!.openDatabase(
+                databasePath: self.openedDatabasePath!.path,
+                databaseInMemory: true,
+                optimize: false,
+                clearDatabase: false
+            )
         }, completion:{
             // 메인 스레드
             self.dismiss(animated: true)
@@ -2663,11 +2689,14 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                             let volume = csvData.volume
                             DispatchQueue.main.async {
                                 if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
-                                    self.titleContent.text = "Volume: \(volume) m³"
-                                }
-                                else {
+                                    // 1) metric (m³)
+                                    let volumeStr = self.formatVolume(volume)
+                                    self.titleContent.text = "Volume : \(volumeStr) m³"
+                                } else {
+                                    // 2) imperial (ft³)
                                     let imp_volume = round(100 * volume * 35.3147) / 100
-                                    self.titleContent.text = "Volume : \(imp_volume) ft³"
+                                    let volumeStr = self.formatVolume(imp_volume)
+                                    self.titleContent.text = "Volume : \(volumeStr) ft³"
                                 }
                             }
                         } else {
@@ -2682,10 +2711,9 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                     }
                 }
             }
-            
         })
     }
-
+    
     func closeVisualization()
     {
         updateState(state: .STATE_IDLE);
@@ -2769,7 +2797,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                 self.dismiss(animated: true)
                 //Read TextFields text data
                 let fileName = textField.text!+".zip"
-                let filePath = self.getDocumentDirectory().appendingPathComponent(fileName).path
+                let filePath = self.getDocumentDirectory().appendingPathComponent(self.SlashScan_EXPORT_DIR).appendingPathComponent(fileName).path
                 if FileManager.default.fileExists(atPath: filePath) {
                     let alert = UIAlertController(title: "File Already Exists", message: "Do you want to overwrite the existing file?", preferredStyle: .alert)
                     let yes = UIAlertAction(title: "Yes", style: .default) {
@@ -2817,7 +2845,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     }
     
     func writeExportedFiles(fileName: String) {
-        let alertView = UIAlertController(title: "Exporting", message: "Please wait while exporting data to \(fileName)...", preferredStyle: .alert)
+        let alertView = UIAlertController(title: "Exporting", message: "Please wait while exporting data to \(fileName).ply...", preferredStyle: .alert)
         alertView.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { _ in
             self.dismiss(animated: true)
             self.progressView = nil
@@ -2836,7 +2864,8 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             self.progressView!.tintColor = self.view.tintColor
             alertView.view.addSubview(self.progressView!)
             
-            let exportDir = self.getTmpDirectory().appendingPathComponent(self.RTABMAP_EXPORT_DIR)
+//            let exportDir = self.getTmpDirectory().appendingPathComponent(self.SlashScan_EXPORT_DIR)
+            let exportDir = self.getDocumentDirectory().appendingPathComponent(self.SlashScan_EXPORT_DIR)
             
             do {
                 try FileManager.default.removeItem(at: exportDir)
@@ -2888,7 +2917,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                 if success {
                     let alertSaved = UIAlertController(
                         title: "Export Complete",
-                        message: "\(fileName) successfully exported.",
+                        message: "\(fileName).ply successfully exported.",
                         preferredStyle: .alert
                     )
                     let alertActionOk = UIAlertAction(title: "OK", style: .cancel, handler: nil)
@@ -2913,7 +2942,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                     }
                     .sorted(by: { $0.1 > $1.1 }) // sort descending modification dates
                     .map { $0.0 } // extract file names
-            databases = data.filter{ $0.pathExtension == "db" && $0.lastPathComponent != RTABMAP_TMP_DB && $0.lastPathComponent != RTABMAP_RECOVERY_DB }
+            databases = data.filter{ $0.pathExtension == "db" && $0.lastPathComponent != SlashScan_TMP_DB && $0.lastPathComponent != SlashScan_RECOVERY_DB }
             
         } catch {
             print("Error while enumerating files : \(error.localizedDescription)")
@@ -3049,6 +3078,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                     self.view.setNeedsDisplay()
                 }
             }
+            // 볼륨 다시 표시
             if let databasePath = self.openedDatabasePath {
                 let csvFileName = (databasePath.lastPathComponent as NSString).deletingPathExtension + ".csv"
                 let name = (databasePath.lastPathComponent as NSString).deletingPathExtension
@@ -3057,11 +3087,13 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                     if let csvData = self.readCSV(fileName: csvFileName, name: name) {
                         let volume = csvData.volume
                         if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
-                            self.titleContent.text = "Volume : \(volume) m³"
+                            let volumeStr = self.formatVolume(volume)
+                            self.titleContent.text = "Volume : \(volumeStr) m³"
                         }
                         else {
                             let imp_volume = round(100 * volume * 35.3147) / 100
-                            self.titleContent.text = "Volume : \(imp_volume) ft³"
+                            let volumeStr = self.formatVolume(imp_volume)
+                            self.titleContent.text = "Volume : \(volumeStr) ft³"
                         }
                     }
                 } else {
@@ -3081,6 +3113,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             self.updateState(state: .STATE_EDIT)
             self.rtabmap!.setWireframe(enabled: true)
             rtabmap?.setGridVisible(visible: false)
+            // 측정 초기화 시 0 표시도 쉼표 적용을 원하시면 아래도 formatVolume(0) 사용 가능
             if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
                 self.titleContent.text = "Volume : 0 m³"
             }
@@ -3094,8 +3127,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         
         if let scanSceneVC = storyboard.instantiateViewController(withIdentifier: "mapScene") as? MapViewController {
-            // 네비게이션 컨트롤러가 없을 경우 모달 방식으로 표시
-            scanSceneVC.modalPresentationStyle = .fullScreen // 필요에 따라 스타일 조정
+            scanSceneVC.modalPresentationStyle = .fullScreen
             scanSceneVC.modalTransitionStyle = .coverVertical
             self.present(scanSceneVC, animated: true, completion: nil)
         } else {

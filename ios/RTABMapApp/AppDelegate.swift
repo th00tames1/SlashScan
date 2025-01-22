@@ -184,8 +184,7 @@ func setDefaultsFromSettings() {
     UserDefaults.standard.set(0.05, forKey: "NoiseFilteringRatio")
     
     // ColorCorrectionRadius : default 0.02
-    // (Root.plist에 있음)
-    UserDefaults.standard.set(0.02, forKey: "ColorCorrectionRadius")
+    UserDefaults.standard.set(0.01, forKey: "ColorCorrectionRadius")
     
     // TextureResolution : default 4
     UserDefaults.standard.set(4, forKey: "TextureResolution")
@@ -197,8 +196,8 @@ func setDefaultsFromSettings() {
     // Assembling Parameter
     // ----------------------------------------------------
 
-    // TextureSize : default 8192
-    UserDefaults.standard.set(8192, forKey: "TextureSize")
+    // TextureSize : default 4096
+    UserDefaults.standard.set(4096, forKey: "TextureSize")
 
     // MaximumOutputTextures : default 1
     UserDefaults.standard.set(1, forKey: "MaximumOutputTextures")
@@ -243,12 +242,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         var initialViewController: UIViewController
 
-        // 라이다 지원을 안할 경우
+        // If it doesn't support LiDAR,
         if !ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
             // Error Message View Control
             initialViewController = storyboard.instantiateViewController(withIdentifier: "unsupportedDeviceMessage")
         } else {
-            // 'mapScene'을 루트 뷰 컨트롤러로 설정합니다.
             initialViewController = storyboard.instantiateViewController(withIdentifier: "mapScene")
         }
         

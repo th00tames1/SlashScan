@@ -210,15 +210,15 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
         let circleView = UIView()
         circleView.translatesAutoresizingMaskIntoConstraints = false
         circleView.backgroundColor = .white
-        circleView.layer.cornerRadius = 20 // 반지름 20
+        circleView.layer.cornerRadius = 25
         circleView.layer.masksToBounds = true
         view.addSubview(circleView)
         
         // 버튼 생성
         addButton = UIButton(type: .system)
         addButton.translatesAutoresizingMaskIntoConstraints = false
-        addButton.setBackgroundImage(UIImage(systemName: "plus.circle.fill"), for: .normal)
-        addButton.tintColor = .systemBlue
+        addButton.setBackgroundImage(UIImage(systemName: "map.circle.fill"), for: .normal)
+        addButton.tintColor = .systemGreen
         addButton.clipsToBounds = true
         addButton.addTarget(self, action: #selector(addButtonTapped), for: .touchUpInside)
         view.addSubview(addButton)
@@ -226,10 +226,10 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
         // 오토레이아웃 제약조건 설정
         NSLayoutConstraint.activate([
             // 흰색 원의 크기 및 위치 설정
-            circleView.widthAnchor.constraint(equalToConstant: 40),
-            circleView.heightAnchor.constraint(equalToConstant: 40),
+            circleView.widthAnchor.constraint(equalToConstant: 50),
+            circleView.heightAnchor.constraint(equalToConstant: 50),
             circleView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            circleView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -25),
+            circleView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             addButton.widthAnchor.constraint(equalToConstant: 70),
             addButton.heightAnchor.constraint(equalToConstant: 70),
             addButton.centerYAnchor.constraint(equalTo: view.centerYAnchor),
@@ -521,13 +521,15 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
             self.savePinpointsToCSV()
         }
     }
-
-    func updateCSVFile(fileInfo: FileInfo, newLat: Double, newLon: Double) {
+    // MARK: - CSV 업데이트 (Latitude, Longitude, Altitude 모두 처리)
+    func updateCSVFile(fileInfo: FileInfo, newLat: Double, newLon: Double, newAlt: Double) {
         let docURL = getDocumentDirectory().appendingPathComponent(fileInfo.fileName + ".csv")
         guard FileManager.default.fileExists(atPath: docURL.path) else {
             showAlert(title: "Error", message: "Cannot find the file.")
             return
         }
+        
+        // pinpoints.csv는 제외
         if fileInfo.fileName.lowercased() == "pinpoints" {
             return
         }
@@ -537,33 +539,51 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
             var lines = content.components(separatedBy: .newlines)
             guard lines.count > 1 else { return }
 
+            // 헤더
             let headerLine = lines[0]
-            let headers = headerLine.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+            let headers = headerLine
+                .components(separatedBy: ",")
+                .map { $0.trimmingCharacters(in: .whitespaces).lowercased() }
 
-            guard let latIndex = headers.firstIndex(where: { $0.lowercased() == "latitude" }),
-                  let lonIndex = headers.firstIndex(where: { $0.lowercased() == "longitude" }) else {
+            // latitude, longitude, altitude 인덱스 찾기
+            guard let latIndex = headers.firstIndex(where: { $0 == "latitude" }),
+                  let lonIndex = headers.firstIndex(where: { $0 == "longitude" }) else {
                 showAlert(title: "Error", message: "Data does not contain latitude or longitude columns.")
                 return
             }
+            // altitude 컬럼은 없을 수도 있으니 옵셔널로 처리
+            let altIndex = headers.firstIndex(where: { $0 == "altitude" })
 
+            // 실제 데이터는 1번 라인부터 (헤더는 0번 라인)
             var dataLine = lines[1].components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-            if latIndex < dataLine.count && lonIndex < dataLine.count {
-                dataLine[latIndex] = "\(newLat)"
-                dataLine[lonIndex] = "\(newLon)"
-                lines[1] = dataLine.joined(separator: ",")
+
+            // latIndex, lonIndex, altIndex 순으로 값 수정
+            if latIndex < dataLine.count { dataLine[latIndex] = "\(newLat)" }
+            if lonIndex < dataLine.count { dataLine[lonIndex] = "\(newLon)" }
+            if let altIdx = altIndex, altIdx < dataLine.count {
+                dataLine[altIdx] = "\(newAlt)"
             }
 
+            // 수정된 데이터 라인을 다시 합쳐서 저장
+            lines[1] = dataLine.joined(separator: ",")
             let newContent = lines.joined(separator: "\n")
             try newContent.write(to: docURL, atomically: true, encoding: .utf8)
-            showAlert(title: "Save Complete", message: "Coordinates have been updated.")
 
+            showAlert(title: "Save Complete", message: "Coordinates have been updated.")
         } catch {
             showAlert(title: "Error", message: "Failed to update the file: \(error.localizedDescription)")
         }
     }
 
+    // MARK: - 좌표/고도 입력 Alert
     func presentCoordinateEditAlert(for fileInfo: FileInfo) {
-        let alert = UIAlertController(title: "Edit Coordinates for '\(fileInfo.fileName)'", message: "Please enter new latitude, longitude and altitude.", preferredStyle: .alert)
+        let alert = UIAlertController(
+            title: "Edit Coordinates for '\(fileInfo.fileName)'",
+            message: "Please enter new latitude, longitude, and altitude.",
+            preferredStyle: .alert
+        )
+        
+        // Latitude
         alert.addTextField { textField in
             textField.placeholder = "Latitude"
             if let lat = fileInfo.latitude {
@@ -571,6 +591,8 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
             }
             textField.keyboardType = .decimalPad
         }
+        
+        // Longitude
         alert.addTextField { textField in
             textField.placeholder = "Longitude"
             if let lon = fileInfo.longitude {
@@ -578,10 +600,12 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
             }
             textField.keyboardType = .decimalPad
         }
+        
+        // Altitude
         alert.addTextField { textField in
             textField.placeholder = "Altitude"
-            if let lon = fileInfo.altitude {
-                textField.text = "\(lon)"
+            if let alt = fileInfo.altitude {
+                textField.text = "\(alt)"
             }
             textField.keyboardType = .decimalPad
         }
@@ -589,12 +613,17 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         alert.addAction(UIAlertAction(title: "Save", style: .default, handler: { _ in
             guard let latText = alert.textFields?[0].text, let latVal = Double(latText),
-                  let lonText = alert.textFields?[1].text, let lonVal = Double(lonText) else {
+                  let lonText = alert.textFields?[1].text, let lonVal = Double(lonText),
+                  let altText = alert.textFields?[2].text, let altVal = Double(altText)
+            else {
                 self.showAlert(title: "Error", message: "Please enter valid numbers.")
                 return
             }
-            self.updateCSVFile(fileInfo: fileInfo, newLat: latVal, newLon: lonVal)
+            
+            // Altitude도 같이 업데이트하도록 수정
+            self.updateCSVFile(fileInfo: fileInfo, newLat: latVal, newLon: lonVal, newAlt: altVal)
         }))
+        
         present(alert, animated: true)
     }
 

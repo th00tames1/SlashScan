@@ -3131,7 +3131,7 @@ bool RTABMapApp::exportMesh(
 							optimizedDepth = 12;
 							for(int i=6; i<12; ++i)
 							{
-								if(mapLength/float(1<<i) < 0.03f)
+								if(mapLength/float(1<<i) < 0.02f) //minimum mesh size (Default:3)
 								{
 									optimizedDepth = i;
 									break;

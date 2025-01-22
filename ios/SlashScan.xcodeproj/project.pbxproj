@@ -9,9 +9,9 @@
 /* Begin PBXBuildFile section */
 		200885912CDC7A2B00698393 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 2019047E2C9CB1570093C542 /* Main.storyboard */; };
 		20228B202D20B0D100049849 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2042C5602C9A544000AA418A /* ViewController.swift */; };
-		2087AFA52C9A0ABC00F9B893 /* Zip in Frameworks */ = {isa = PBXBuildFile; productRef = 2087AFA42C9A0ABC00F9B893 /* Zip */; };
 		20B74C612C9B39D8001CE332 /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20B74C602C9B39D3001CE332 /* Main.swift */; };
 		20DB1E792D30CB1D0015F6E8 /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 20DB1E782D30CB1D0015F6E8 /* Settings.bundle */; };
+		20E5B7EC2D35B197002C682B /* Zip in Frameworks */ = {isa = PBXBuildFile; productRef = 20E5B7EB2D35B197002C682B /* Zip */; };
 		4E20B24E266AB94300316EE6 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4E20B24D266AB94300316EE6 /* Images.xcassets */; };
 		4E2C516725A63119005CEDBD /* DatabaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E2C516525A63119005CEDBD /* DatabaseView.swift */; };
 		4E2C516825A63119005CEDBD /* VerticalScrollerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E2C516625A63119005CEDBD /* VerticalScrollerView.swift */; };
@@ -374,7 +374,7 @@
 				4EFD0F30259D5C2200575D88 /* libg2o_types_sclam2d.a in Frameworks */,
 				4EFD0F31259D5C2200575D88 /* libg2o_types_sim3.a in Frameworks */,
 				4EFD0F32259D5C2200575D88 /* libgtsam.a in Frameworks */,
-				2087AFA52C9A0ABC00F9B893 /* Zip in Frameworks */,
+				20E5B7EC2D35B197002C682B /* Zip in Frameworks */,
 				4EFD0EDD259D5BFC00575D88 /* libopencv_video.a in Frameworks */,
 				4EFD0EDE259D5BFC00575D88 /* libopencv_aruco.a in Frameworks */,
 				4EFD0EDF259D5BFC00575D88 /* libopencv_photo.a in Frameworks */,
@@ -732,7 +732,7 @@
 			);
 			name = SlashScan;
 			packageProductDependencies = (
-				2087AFA42C9A0ABC00F9B893 /* Zip */,
+				20E5B7EB2D35B197002C682B /* Zip */,
 			);
 			productName = RTABMapApp;
 			productReference = 4EE015C2259A2AF0008CCE65 /* SlashScan.app */;
@@ -763,7 +763,7 @@
 			);
 			mainGroup = 4EE015B9259A2AF0008CCE65;
 			packageReferences = (
-				2087AFA32C9A0ABC00F9B893 /* XCRemoteSwiftPackageReference "Zip" */,
+				20E5B7EA2D35B197002C682B /* XCRemoteSwiftPackageReference "Zip" */,
 			);
 			productRefGroup = 4EE015C3259A2AF0008CCE65 /* Products */;
 			projectDirPath = "";
@@ -1007,7 +1007,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = 2PH76TF2YG;
+				DEVELOPMENT_TEAM = 9DZJB5T89F;
 				ENABLE_MODULE_VERIFIER = YES;
 				EXCLUDED_ARCHS = "";
 				FRAMEWORK_SEARCH_PATHS = (
@@ -1039,7 +1039,7 @@
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu11 gnu++14";
 				OTHER_CFLAGS = "";
-				PRODUCT_BUNDLE_IDENTIFIER = "hcjeong-ssmart";
+				PRODUCT_BUNDLE_IDENTIFIER = "woo-slashscan";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "RTABMapApp/$(SWIFT_MODULE_NAME)-Bridging-Header.h";
@@ -1073,7 +1073,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = 2PH76TF2YG;
+				DEVELOPMENT_TEAM = 9DZJB5T89F;
 				ENABLE_MODULE_VERIFIER = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1106,7 +1106,7 @@
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu11 gnu++14";
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "";
-				PRODUCT_BUNDLE_IDENTIFIER = "hcjeong-ssmart";
+				PRODUCT_BUNDLE_IDENTIFIER = "woo-slashscan";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "RTABMapApp/$(SWIFT_MODULE_NAME)-Bridging-Header.h";
@@ -1151,7 +1151,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		2087AFA32C9A0ABC00F9B893 /* XCRemoteSwiftPackageReference "Zip" */ = {
+		20E5B7EA2D35B197002C682B /* XCRemoteSwiftPackageReference "Zip" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/marmelroy/Zip.git";
 			requirement = {
@@ -1162,9 +1162,9 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		2087AFA42C9A0ABC00F9B893 /* Zip */ = {
+		20E5B7EB2D35B197002C682B /* Zip */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 2087AFA32C9A0ABC00F9B893 /* XCRemoteSwiftPackageReference "Zip" */;
+			package = 20E5B7EA2D35B197002C682B /* XCRemoteSwiftPackageReference "Zip" */;
 			productName = Zip;
 		};
 /* End XCSwiftPackageProductDependency section */
