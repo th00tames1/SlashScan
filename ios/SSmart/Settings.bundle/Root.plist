@@ -66,33 +66,17 @@
 			<key>Type</key>
 			<string>PSGroupSpecifier</string>
 			<key>Title</key>
-			<string>Data Processing</string>
+			<string>Open Source Software License</string>
 		</dict>
 		<dict>
-			<key>Type</key>
-			<string>PSMultiValueSpecifier</string>
-			<key>Title</key>
-			<string>Subsampling Size</string>
+			<key>File</key>
+			<string>License</string>
 			<key>Key</key>
-			<string>VoxelSize</string>
-			<key>DefaultValue</key>
-			<real>0.01</real>
-			<key>Titles</key>
-			<array>
-				<string>10 cm</string>
-				<string>5 cm</string>
-				<string>2 cm</string>
-				<string>1 cm (Default)</string>
-				<string>Disabled</string>
-			</array>
-			<key>Values</key>
-			<array>
-				<real>0.1</real>
-				<real>0.05</real>
-				<real>0.02</real>
-				<real>0.01</real>
-				<real>0</real>
-			</array>
+			<string></string>
+			<key>Title</key>
+			<string>License</string>
+			<key>Type</key>
+			<string>PSChildPaneSpecifier</string>
 		</dict>
 	</array>
 </dict>

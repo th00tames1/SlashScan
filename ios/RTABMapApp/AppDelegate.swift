@@ -37,9 +37,9 @@ func setDefaultsFromSettings() {
     //    // Measurement Unit: default 0=Metric, 1=Imperial
     //    UserDefaults.standard.set(0, forKey: "MeasurementUnit")
     //
-    //    // VoxelSize : default 0.01
-    //    UserDefaults.standard.set(0.01, forKey: "VoxelSize")
-    //
+    // VoxelSize : default 0.01
+    UserDefaults.standard.set(0.01, forKey: "VoxelSize")
+
     
     // -----------------------------
     // [1] Blending (Online Blending)
