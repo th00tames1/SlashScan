@@ -4,6 +4,7 @@
 //
 //  Created by HC on 9/18/24.
 //
+
 import GLKit
 import ARKit
 import Zip
@@ -298,7 +299,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         }
         
         let cancelAction = UIAlertAction(title: "Cancel", style: .destructive) { _ in
-            
         }
         
         if #available(iOS 15.0, *) {
@@ -322,7 +322,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         self.present(alert, animated: true)
     }
     
-    // New Project 폴더명 입력 팝업
     func showNewProjectNameInputPopup() {
         let alert = UIAlertController(title: "New Project", message: "Enter project folder name", preferredStyle: .alert)
         alert.addTextField { textField in
@@ -333,7 +332,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             if let folderName = alert.textFields?.first?.text, !folderName.isEmpty {
                 self.createProjectFolder(folderName: folderName)
             } else {
-                // 폴더명을 입력하지 않은 경우 다시 입력받거나 에러 처리
                 self.showToast(message: "Folder name cannot be empty.", seconds: 2)
             }
         }
@@ -349,15 +347,13 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         
         self.present(alert, animated: true)
     }
-    
     func showBrowseProjectPopup() {
-        // Documents 디렉토리 내 폴더 목록 가져오기
         let docURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
 
         var folders: [URL] = []
         do {
             let items = try FileManager.default.contentsOfDirectory(at: docURL, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
-            folders = items.filter { $0.hasDirectoryPath }
+            folders = items.filter { $0.hasDirectoryPath && $0.lastPathComponent != "OfflineMaps" }
         } catch {
             print("Error reading directories: \(error)")
         }
@@ -372,8 +368,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         for folderURL in folders {
             let folderName = folderURL.lastPathComponent
             let folderAction = UIAlertAction(title: folderName, style: .default) { _ in
-                
-                // 선택한 폴더로 getDocumentDirectory 설정
                 self.selectedProjectFolderURL = folderURL
                 if let folderURL = self.selectedProjectFolderURL {
                     UserDefaults.standard.setValue(folderURL.path, forKey: "SelectedProjectFolder")
@@ -387,9 +381,14 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                 self.showToast(message: "Selected project: \(folderName)", seconds: 4)
             }
             alert.addAction(folderAction)
+            if #available(iOS 15.0, *) {
+                if let browseProjectIcon = UIImage(systemName: "document") {
+                    folderAction.setValue(browseProjectIcon, forKey: "image")
+                }
+            }
         }
         
-        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { _ in
+        let cancelAction = UIAlertAction(title: "Cancel", style: .destructive) { _ in
             if self.selectedProjectFolderURL == nil {
                 self.showProjectSelectionPopup(cancel: false)
             }
@@ -423,7 +422,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                 }
             }
             let no = UIAlertAction(title: "No", style: .cancel) { _ in
-                // 취소
             }
             alert.addAction(yes)
             alert.addAction(no)
@@ -453,7 +451,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         do {
             let items = try FileManager.default.contentsOfDirectory(at: docURL, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
             // 폴더만 추출
-            folders = items.filter { $0.hasDirectoryPath }
+            folders = items.filter { $0.hasDirectoryPath && $0.lastPathComponent != "OfflineMaps" }
         } catch {
             print("Error reading directories: \(error)")
             return
@@ -1901,7 +1899,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                 alert.addAction(alertActionNo)
                 let alertActionCancel = UIAlertAction(title: "Cancel", style: .cancel) {
                     (UIAlertAction) -> Void in
-                    // do nothing
                 }
                 alert.addAction(alertActionCancel)
                 let alertActionYes = UIAlertAction(title: "Yes", style: .default) {

@@ -1,3 +1,10 @@
+//
+//  ViewController.swift
+//  SlashScan
+//
+//  Created by HC on 9/18/24.
+//
+
 import UIKit
 import ARKit
 
@@ -12,7 +19,21 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         // UIWindowScene이 존재하는지 확인합니다.
         guard let windowScene = (scene as? UIWindowScene) else { return }
+        // 여기서 window를 구성
+        let window = UIWindow(windowScene: windowScene)
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        
+        var initialVC: UIViewController
+        if !ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
+            initialVC = storyboard.instantiateViewController(withIdentifier: "unsupportedDeviceMessage")
+        } else {
+            initialVC = storyboard.instantiateViewController(withIdentifier: "scanScene")
+        }
 
+        window.rootViewController = initialVC
+        window.makeKeyAndVisible()
+        
+        self.window = window
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {

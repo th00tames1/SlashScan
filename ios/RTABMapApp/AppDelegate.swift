@@ -1,3 +1,10 @@
+//
+//  ViewController.swift
+//  SlashScan
+//
+//  Created by HC on 9/18/24.
+//
+
 import UIKit
 import ARKit
 
@@ -226,52 +233,58 @@ func setDefaultsFromSettings() {
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
-
-    var window: UIWindow?
     
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+    // iOS 12 이하 지원을 위해 남겨둠.
+    // (iOS 13 이상은 SceneDelegate에서 window를 관리하는 것이 권장)
+    var window: UIWindow?
 
-        // Always set Version to default
-        let defaults = UserDefaults.standard
-        defaults.removeObject(forKey: "Version")
+    // 앱 실행 시점
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+    ) -> Bool {
+
+        // 버전 키 제거(항상 새로 세팅하고 싶으면)
+        UserDefaults.standard.removeObject(forKey: "Version")
 
         setDefaultsFromSettings()
 
-        let storyboard = UIStoryboard(name: "Main", bundle: nil)
-        window = UIWindow(frame: UIScreen.main.bounds)
-        
-        var initialViewController: UIViewController
+        if #available(iOS 13.0, *) {
+        }
+        else {
+            let storyboard = UIStoryboard(name: "Main", bundle: nil)
+            window = UIWindow(frame: UIScreen.main.bounds)
+            
+            // LiDAR 지원 여부 체크
+            var initialVC: UIViewController
+            if !ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
+                initialVC = storyboard.instantiateViewController(withIdentifier: "unsupportedDeviceMessage")
+            } else {
+                initialVC = storyboard.instantiateViewController(withIdentifier: "scanScene")
+            }
 
-        // If it doesn't support LiDAR,
-        if !ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
-            // Error Message View Control
-            initialViewController = storyboard.instantiateViewController(withIdentifier: "unsupportedDeviceMessage")
-        } else {
-            initialViewController = storyboard.instantiateViewController(withIdentifier: "mapScene")
+            window?.rootViewController = initialVC
+            window?.makeKeyAndVisible()
         }
         
-        sleep(2)
-
-        window?.rootViewController = initialViewController
-        window?.makeKeyAndVisible()
-
         return true
     }
 
-
-    // MARK: UISceneSession Lifecycle
-
-    func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
-        // Called when a new scene session is being created.
-        // Use this method to select a configuration to create the new scene with.
+    // MARK: - UISceneSession Lifecycle (iOS 13+)
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        // iOS 13 이상일 때, 새로 생성되는 Scene에 대한 설정
         return UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
     }
 
-    func application(_ application: UIApplication, didDiscardSceneSessions sceneSessions: Set<UISceneSession>) {
-        // Called when the user discards a scene session.
-        // If any sessions were discarded while the application was not running, this will be called shortly after application:didFinishLaunchingWithOptions.
-        // Use this method to release any resources that were specific to the discarded scenes, as they will not return.
+    func application(
+        _ application: UIApplication,
+        didDiscardSceneSessions sceneSessions: Set<UISceneSession>
+    ) {
+        // iOS 13 이상에서, 사라진 Scene 세션들 정리
     }
-    
 }
 
