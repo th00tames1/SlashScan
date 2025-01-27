@@ -111,27 +111,21 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     @IBOutlet weak var menuButton: UIButton!
     @IBOutlet weak var manualButton: UIButton!
     @IBOutlet weak var viewButton: UIButton!
+    @IBOutlet weak var changeButton: UIButton!
     @IBOutlet weak var libraryButton: UIButton!
     @IBOutlet weak var projectButton: UIButton!
     @IBOutlet weak var statusLabel: UILabel!
-    @IBOutlet weak var closeVisualizationButton: UIButton!
     @IBOutlet weak var stopCameraButton: UIButton!
     @IBOutlet weak var editButton: UIButton!
     @IBOutlet weak var startButton: UIButton!
     @IBOutlet weak var mapButton: UIButton!
-    @IBOutlet weak var infoLabel: UILabel!
-    @IBOutlet weak var titleContent: UITextField!
+    @IBOutlet weak var infoLabel: UITextField!
+    @IBOutlet weak var titleContent: UILabel!
     @IBOutlet weak var cropButton: UIButton!
     @IBOutlet weak var cancelButton: UIButton!
     @IBOutlet weak var editsaveButton: UIButton!
     @IBOutlet weak var toastLabel: UILabel!
-    //    @IBOutlet weak var orthoDistanceSlider: UISlider!{
-    //        didSet{
-    //            orthoDistanceSlider.transform = CGAffineTransform(rotationAngle: CGFloat(-Double.pi/2))
-    //        }
-    //    }
-    //    @IBOutlet weak var orthoGridSlider: UISlider!
-    
+
     let SlashScan_TMP_DB = "slashscan.tmp.db"
     let SlashScan_RECOVERY_DB = "slashscan.tmp.recovery.db"
     let SlashScan_EXPORT_DIR = "Export"
@@ -140,13 +134,11 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         if let projectPath = UserDefaults.standard.string(forKey: "SelectedProjectFolder"),
            !projectPath.isEmpty {
             let projectURL = URL(fileURLWithPath: projectPath)
-            // 해당 폴더가 실제로 존재하는지 확인 (옵션)
             if FileManager.default.fileExists(atPath: projectURL.path) {
                 selectedProjectFolderURL = projectURL
                 return projectURL
             }
         }
-        // 프로젝트 폴더가 없거나 설정되지 않았을 경우 기본 DocumentDirectory 반환
         return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
     }
     
@@ -234,6 +226,26 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         statusLabel.text = ""
         infoLabel.text = ""
         titleContent.text = ""
+        
+        projectButton.layer.shadowOpacity = 0.3
+        projectButton.layer.shadowOffset = CGSize.zero
+        projectButton.layer.shadowRadius = 2
+        
+        libraryButton.layer.shadowOpacity = 0.3
+        libraryButton.layer.shadowOffset = CGSize.zero
+        libraryButton.layer.shadowRadius = 2
+        
+        menuButton.layer.shadowOpacity = 0.3
+        menuButton.layer.shadowOffset = CGSize.zero
+        menuButton.layer.shadowRadius = 2
+        
+        manualButton.layer.shadowOpacity = 0.3
+        manualButton.layer.shadowOffset = CGSize.zero
+        manualButton.layer.shadowRadius = 2
+        
+        changeButton.layer.shadowOpacity = 0.3
+        changeButton.layer.shadowOffset = CGSize.zero
+        changeButton.layer.shadowRadius = 4
         
         updateDatabases()
         
@@ -768,6 +780,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             if self.statusShown {
                 self.statusLabel.text =
                     self.statusLabel.text! +
+                    "Status: \(self.getStateString(state: self.mState))\n" +
                     "Project: \(projectName)\n" +
                     "File Name: \(dataName)\n" +
                     gpsString +
@@ -973,19 +986,20 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             projectButton.isHidden = true
             libraryButton.isHidden = true
             menuButton.isHidden = true
-            viewButton.isHidden = !mHudVisible
+            viewButton.isHidden = true
+            changeButton.isHidden = false
             startButton.isHidden = true
             recordButton.isHidden = false
             stopButton.isHidden = true
             saveButton.isHidden = true
             editButton.isHidden = true
             mapButton.isHidden = true
-            closeVisualizationButton.isHidden = true
             stopCameraButton.isHidden = false
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = viewMode != 0 || !mHudVisible
             titleContent.isHidden = true
             infoLabel.isHidden = true
+            statusLabel.isHidden = true
             actionNewScanEnabled = !mDataRecording
             actionNewDataRecording = mDataRecording
             actionSaveEnabled = false
@@ -997,19 +1011,19 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             cancelButton.isHidden = true
             editsaveButton.isHidden = true
         case .STATE_MAPPING:
-            projectButton.isHidden = !mHudVisible
-            libraryButton.isHidden = !mHudVisible
-            menuButton.isHidden = !mHudVisible
-            viewButton.isHidden = !mHudVisible
+            projectButton.isHidden = true
+            libraryButton.isHidden = true
+            menuButton.isHidden = true
+            viewButton.isHidden = true
             startButton.isHidden = true
             recordButton.isHidden = true
             stopButton.isHidden = false
             saveButton.isHidden = true
             editButton.isHidden = true
             mapButton.isHidden = true
-            closeVisualizationButton.isHidden = true
             stopCameraButton.isHidden = true
             infoLabel.isHidden = true
+            statusLabel.isHidden = true
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = viewMode != 0 || !mHudVisible
             titleContent.isHidden = true
@@ -1030,14 +1044,15 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             libraryButton.isHidden = true
             menuButton.isHidden = true
             viewButton.isHidden = true
+            changeButton.isHidden = true
             startButton.isHidden = true
             recordButton.isHidden = true
             stopButton.isHidden = true
             saveButton.isHidden = true
-            infoLabel.isHidden = true
             editButton.isHidden = true
             mapButton.isHidden = true
-            closeVisualizationButton.isHidden = true
+            infoLabel.isHidden = true
+            statusLabel.isHidden = true
             stopCameraButton.isHidden = mState != .STATE_VISUALIZING_CAMERA
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = true
@@ -1059,16 +1074,17 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             viewButton.isHidden = !mHudVisible
             startButton.isHidden = !mHudVisible
             recordButton.isHidden = true
+            changeButton.isHidden = true
             stopButton.isHidden = true
             saveButton.isHidden = true
             editButton.isHidden = !mHudVisible
             mapButton.isHidden = !mHudVisible
-            closeVisualizationButton.isHidden = true
             stopCameraButton.isHidden = true
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = true
             titleContent.isHidden = !mHudVisible
             infoLabel.isHidden = !mHudVisible
+            statusLabel.isHidden = !mHudVisible
             actionNewScanEnabled = true
             actionNewDataRecording = true
             actionSaveEnabled = mMapNodes>0
@@ -1084,18 +1100,19 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             libraryButton.isHidden = mState != .STATE_WELCOME && !mHudVisible
             menuButton.isHidden = mState != .STATE_WELCOME && !mHudVisible
             viewButton.isHidden = mState != .STATE_WELCOME && !mHudVisible
+            changeButton.isHidden = true
             startButton.isHidden = !mHudVisible
             recordButton.isHidden = true
             stopButton.isHidden = true
             saveButton.isHidden = true
             editButton.isHidden = !mHudVisible
             mapButton.isHidden = !mHudVisible
-            closeVisualizationButton.isHidden = true
             stopCameraButton.isHidden = true
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = true
             titleContent.isHidden = !mHudVisible
             infoLabel.isHidden = !mHudVisible
+            statusLabel.isHidden = !mHudVisible
             actionNewScanEnabled = true
             actionNewDataRecording = true
             actionSaveEnabled = mState != .STATE_WELCOME && mMapNodes>0
@@ -1111,18 +1128,19 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             libraryButton.isHidden = true
             menuButton.isHidden = true
             viewButton.isHidden = false
+            changeButton.isHidden = true
             startButton.isHidden = true
             recordButton.isHidden = true
             stopButton.isHidden = true
             saveButton.isHidden = true
             editButton.isHidden = false
             mapButton.isHidden = true
-            closeVisualizationButton.isHidden = true
             stopCameraButton.isHidden = true
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = true
             titleContent.isHidden = false
             infoLabel.isHidden = false
+            statusLabel.isHidden = true
             actionNewScanEnabled = true
             actionNewDataRecording = true
             actionSaveEnabled = mMapNodes>0
@@ -1143,6 +1161,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             libraryButton.isHidden = mState != .STATE_WELCOME
             menuButton.isHidden = mState != .STATE_WELCOME
             viewButton.isHidden = true
+            changeButton.isHidden = true
             startButton.isHidden = false
 //            startButton.isHidden = selectedProjectFolderURL == nil
             recordButton.isHidden = true
@@ -1150,10 +1169,10 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             saveButton.isHidden = true
             editButton.isHidden = true
             mapButton.isHidden = false
-            closeVisualizationButton.isHidden = true
             stopCameraButton.isHidden = true
             infoLabel.isHidden = true
             titleContent.isHidden = true
+            statusLabel.isHidden = true
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = true
             actionNewScanEnabled = true
@@ -2347,7 +2366,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             indicator.removeFromSuperview()
             
             self.openedDatabasePath = URL(fileURLWithPath: filePath)
-            self.infoLabel.text = fileName
+            self.infoLabel.text = String(fileName.dropLast(3))
             let alert = UIAlertController(title: "Database saved.", message: String(format: "Database \"%@\" successfully saved.", fileName), preferredStyle: .alert)
             let yes = UIAlertAction(title: "OK", style: .default) {
                 (UIAlertAction) -> Void in
@@ -2634,7 +2653,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         
         openedDatabasePath = fileUrl
         let fileName: String = self.openedDatabasePath!.lastPathComponent
-        infoLabel.text = fileName
+        infoLabel.text = String(fileName.dropLast(3))
         
         let progressDialog = UIAlertController(
             title: "Loading",
@@ -3009,27 +3028,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         rtabmap?.setPausedMapping(paused: false);
         updateState(state: .STATE_MAPPING)
     }
-
-//    @IBAction func switchAction(_ sender: UIButton) {
-//        if(viewMode == 0){
-//            self.setMeshRendering(viewMode: 2)
-//            infoLabel.text = "Mesh View"
-//        }
-//        else if(viewMode == 1){
-//            self.setMeshRendering(viewMode: 2)
-//            print("viewmode 2")
-//            infoLabel.text = "Mesh View"
-//        }
-//        else {
-//            self.setMeshRendering(viewMode: 0)
-//            infoLabel.text = "Point Cloud View"
-//        }
-//    }
-    
-    @IBAction func closeVisualizationAction(_ sender: UIButton) {
-        closeVisualization()
-        rtabmap!.postExportation(visualize: false)
-    }
     
     @IBAction func stopCameraAction(_ sender: UIButton) {
         appMovedToBackground();
@@ -3041,20 +3039,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     
     @IBAction func projectAction(_ sender: UIButton) {
         showProjectSelectionPopup(cancel: true);
-    }
-    
-    @IBAction func rotateGridAction(_ sender: UISlider) {
-//        rtabmap!.setGridRotation((Float(sender.value)-90.0)/2.0)
-        if(viewMode == 0){
-            // raw : 0 ~ 180
-            let point_size = (round(Float(sender.value) / 9))
-            rtabmap!.setPointSize(value: point_size)
-            self.view.setNeedsDisplay()
-        }
-    }
-    @IBAction func clipDistanceAction(_ sender: UISlider) {
-        rtabmap!.setOrthoCropFactor(Float(120-sender.value)/20.0 - 3.0)
-        self.view.setNeedsDisplay()
     }
     
     @IBAction func saveButtonTapped(_ sender: UIButton) {
@@ -3075,7 +3059,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                     self.view.setNeedsDisplay()
                 }
             }
-            // 볼륨 다시 표시
             if let databasePath = self.openedDatabasePath {
                 let csvFileName = (databasePath.lastPathComponent as NSString).deletingPathExtension + ".csv"
                 let name = (databasePath.lastPathComponent as NSString).deletingPathExtension
@@ -3110,7 +3093,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             self.updateState(state: .STATE_EDIT)
             self.rtabmap!.setWireframe(enabled: true)
             rtabmap?.setGridVisible(visible: false)
-            // 측정 초기화 시 0 표시도 쉼표 적용을 원하시면 아래도 formatVolume(0) 사용 가능
             if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
                 self.titleContent.text = "Volume : 0 m³"
             }
@@ -3129,6 +3111,18 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             self.present(scanSceneVC, animated: true, completion: nil)
         } else {
             print("Error: 'mapScene' 뷰 컨트롤러를 'ViewController' 클래스로 캐스팅할 수 없습니다.")
+        }
+    }
+    
+    @IBAction func changeButtonTapped(_ sender: UIButton) {
+        if cameraMode == 2 {
+            self.setGLCamera(type: 0)
+            self.showToast(message: "2D View", seconds: 2)
+            changeButton.setImage(UIImage(systemName: "view.3d"), for: .normal)
+        } else {
+            self.setGLCamera(type: 2)
+            self.showToast(message: "3D View", seconds: 2)
+            changeButton.setImage(UIImage(systemName: "view.2d"), for: .normal)
         }
     }
     
@@ -3436,13 +3430,13 @@ final class ManualPopupViewController: UIViewController {
         self.view.addSubview(manualView)
         self.manualView = manualView
 
-        let deviceWidth: CGFloat = UIDevice.current.userInterfaceIdiom == .phone ? 200 : 350
+        let deviceWidth: CGFloat = UIDevice.current.userInterfaceIdiom == .phone ? 300 : 350
 
         NSLayoutConstraint.activate([
             manualView.centerXAnchor.constraint(equalTo: self.view.centerXAnchor),
             manualView.centerYAnchor.constraint(equalTo: self.view.centerYAnchor),
             manualView.widthAnchor.constraint(equalToConstant: deviceWidth),
-            manualView.heightAnchor.constraint(lessThanOrEqualToConstant: 400)
+            manualView.heightAnchor.constraint(lessThanOrEqualToConstant: 450)
         ])
 
         let verticalStack = UIStackView()

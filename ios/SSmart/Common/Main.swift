@@ -215,8 +215,8 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
         NSLayoutConstraint.activate([
             offlineMapsTableView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             offlineMapsTableView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            offlineMapsTableView.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.5),
-            offlineMapsTableView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.4)
+            offlineMapsTableView.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.8),
+            offlineMapsTableView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.5)
         ])
     }
 
@@ -510,7 +510,7 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
     @objc func editcoordsButtonTapped() {
         scannedFiles = scanCSVFiles()
 
-        let alertController = UIAlertController(title: "Edit Longitude/Latitude", message: nil, preferredStyle: .actionSheet)
+        let alertController = UIAlertController(title: "Edit Coordinates", message: nil, preferredStyle: .actionSheet)
 
         for file in scannedFiles {
             let title = file.hasCoordinates ? file.fileName : "\(file.fileName) (No Coordinates)"
@@ -1271,7 +1271,7 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
 
     func open3DView(for annotation: CustomAnnotation) {
         guard annotation.isCSV, let csvName = annotation.csvFileName else {
-            showAlert(title: "Error", message: "No associated project.")
+            showAlert(title: "Error", message: "No associated project found for 3D view.")
             return
         }
 
@@ -1284,8 +1284,12 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
         }
 
         dismiss(animated: true) {
-            // 3D 뷰 열기
-            print("Open 3D with DB: \(dbURL.path)")
+            if let window = UIApplication.shared.windows.first,
+               let rootVC = window.rootViewController as? ViewController {
+                rootVC.openDatabase(fileUrl: dbURL)
+            } else {
+                print("Cannot find ViewController to open database.")
+            }
         }
     }
 
@@ -1760,10 +1764,10 @@ class OfflineMapCell: UITableViewCell {
         thumbnailImageView.contentMode = .scaleAspectFit
         thumbnailImageView.translatesAutoresizingMaskIntoConstraints = false
         
-        nameLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        nameLabel.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        dateLabel.font = UIFont.systemFont(ofSize: 14)
+        dateLabel.font = UIFont.systemFont(ofSize: 12)
         dateLabel.textColor = .darkGray
         dateLabel.translatesAutoresizingMaskIntoConstraints = false
 
@@ -1788,7 +1792,7 @@ class OfflineMapCell: UITableViewCell {
         NSLayoutConstraint.activate([
             thumbnailImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
             thumbnailImageView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            thumbnailImageView.widthAnchor.constraint(equalToConstant: 100),
+            thumbnailImageView.widthAnchor.constraint(lessThanOrEqualToConstant: 100),
             thumbnailImageView.heightAnchor.constraint(equalToConstant: 100),
 
             labelStackView.leadingAnchor.constraint(equalTo: thumbnailImageView.trailingAnchor, constant: 10),
