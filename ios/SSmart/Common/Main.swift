@@ -81,22 +81,17 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
     var doubleTapGesture: UITapGestureRecognizer!
     var pinCount = 0
 
-    // 기존 오프라인 버튼 -> Offline Map 버튼으로 바꿔줍니다.
     var offlineButton: UIButton!
 
-    // 2. "오프라인 목록" UI (테이블뷰)
     var offlineMapsTableView: UITableView!
-    var offlineMaps: [OfflineMapInfo] = []      // 저장된 오프라인 맵 목록
+    var offlineMaps: [OfflineMapInfo] = []
 
-    // 목록 하단 버튼들
     var createNewButton: UIButton!
     var cancelButton: UIButton!
 
-    // 4. 카메라 아이콘(새 맵 생성 시 사용)
     var captureButton: UIButton!
     var isCreatingNewOfflineMap: Bool = false
 
-    // 현재 지도에 오버레이된 오프라인 맵(토글 용)
     var currentOfflineOverlay: OfflineOverlay?
 
     override func viewDidLoad() {
@@ -107,7 +102,15 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         mapView.delegate = self
         mapView.mapType = .hybrid
+        mapView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(mapView)
+
+        NSLayoutConstraint.activate([
+          mapView.topAnchor.constraint(equalTo: view.topAnchor),
+          mapView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+          mapView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+          mapView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
 
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
@@ -697,12 +700,15 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
         }
 
         let center = offlineMap.regionCenter
-        let latDelta = offlineMap.regionSpan.latitudeDelta
+        let verticalScaleFactor: Double = 1.04 //Multiplier
+        let latDelta = offlineMap.regionSpan.latitudeDelta * verticalScaleFactor
         let lonDelta = offlineMap.regionSpan.longitudeDelta
-        let topLeft = CLLocationCoordinate2D(latitude: center.latitude + latDelta/2,
-                                             longitude: center.longitude - lonDelta/2)
-        let bottomRight = CLLocationCoordinate2D(latitude: center.latitude - latDelta/2,
-                                                 longitude: center.longitude + lonDelta/2)
+
+        let topLeft = CLLocationCoordinate2D(latitude: center.latitude + latDelta / 2,
+                                             longitude: center.longitude - lonDelta / 2)
+        let bottomRight = CLLocationCoordinate2D(latitude: center.latitude - latDelta / 2,
+                                                 longitude: center.longitude + lonDelta / 2)
+
         let mapPointTopLeft = MKMapPoint(topLeft)
         let mapPointBottomRight = MKMapPoint(bottomRight)
         let mapRect = MKMapRect(
@@ -711,6 +717,7 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
             width: mapPointBottomRight.x - mapPointTopLeft.x,
             height: mapPointBottomRight.y - mapPointTopLeft.y
         )
+
 
         let overlay = OfflineOverlay(boundingMapRect: mapRect, coordinate: center)
         overlay.offlineMapName = offlineMap.mapName

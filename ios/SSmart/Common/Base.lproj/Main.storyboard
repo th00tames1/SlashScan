@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="zah-iI-EPt">
-    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <device id="retina6_9" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23506"/>
@@ -15,11 +15,11 @@
             <objects>
                 <glkViewController storyboardIdentifier="scanScene" preferredFramesPerSecond="30" id="zah-iI-EPt" customClass="ViewController" customModule="SlashScan" customModuleProvider="target" sceneMemberID="viewController">
                     <glkView key="view" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" drawableDepthFormat="24" enableSetNeedsDisplay="NO" id="sqF-4e-2HU">
-                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <rect key="frame" x="0.0" y="0.0" width="440" height="956"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="5" translatesAutoresizingMaskIntoConstraints="NO" id="kPv-DO-hpd">
-                                <rect key="frame" x="313" y="241" width="70" height="370"/>
+                                <rect key="frame" x="360" y="293" width="70" height="370"/>
                                 <subviews>
                                     <button clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="mJN-Ru-yPg" userLabel="StopButton">
                                         <rect key="frame" x="0.0" y="0.6666666666666643" width="70" height="68.666666666666686"/>
@@ -139,7 +139,7 @@
                                 </subviews>
                             </stackView>
                             <stackView opaque="NO" contentMode="scaleToFill" spacing="15" translatesAutoresizingMaskIntoConstraints="NO" id="ozY-dg-YOd">
-                                <rect key="frame" x="223" y="69" width="150" height="40"/>
+                                <rect key="frame" x="270" y="72" width="150" height="40"/>
                                 <subviews>
                                     <button contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="9kh-4C-KyP" userLabel="ProjectButton">
                                         <rect key="frame" x="0.0" y="0.33333333333333215" width="40" height="39.666666666666671"/>
@@ -186,7 +186,7 @@
                                 </subviews>
                             </stackView>
                             <button contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oLm-dp-ZcO" userLabel="ManualButton">
-                                <rect key="frame" x="333" y="129.66666666666666" width="40" height="38.666666666666657"/>
+                                <rect key="frame" x="380" y="132.66666666666666" width="40" height="38.666666666666657"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="40" id="2yj-6X-02K"/>
                                     <constraint firstAttribute="width" constant="40" id="onE-jx-QZo"/>
@@ -200,13 +200,13 @@
                                 </connections>
                             </button>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="wordWrap" baselineAdjustment="alignBaselines" minimumFontSize="10" translatesAutoresizingMaskIntoConstraints="NO" id="KlF-4H-k6I">
-                                <rect key="frame" x="16" y="79" width="26.333333333333329" height="12"/>
+                                <rect key="frame" x="15.999999999999998" y="82" width="26.333333333333321" height="12"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="10"/>
                                 <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="9oq-op-NGV" userLabel="StopCamera">
-                                <rect key="frame" x="16" y="69" width="90" height="29"/>
+                                <rect key="frame" x="16" y="72" width="90" height="29"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="24"/>
                                 <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <state key="normal" title="  Close">
@@ -224,7 +224,7 @@
                                 </connections>
                             </button>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Toast Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="JMv-UE-cvK" userLabel="ToastLabel">
-                                <rect key="frame" x="150.66666666666666" y="607.33333333333337" width="92" height="21.666666666666629"/>
+                                <rect key="frame" x="174" y="711.33333333333337" width="92" height="21.666666666666629"/>
                                 <color key="backgroundColor" white="0.0" alpha="0.3002232142857143" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <accessibility key="accessibilityConfiguration">
                                     <accessibilityTraits key="traits" staticText="YES" notEnabled="YES"/>
@@ -234,7 +234,7 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <label hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" usesAttributedText="YES" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="3LQ-Ga-w4w">
-                                <rect key="frame" x="156.66666666666666" y="165" width="80" height="24"/>
+                                <rect key="frame" x="180" y="168" width="80" height="24"/>
                                 <color key="backgroundColor" systemColor="placeholderTextColor"/>
                                 <attributedString key="attributedText">
                                     <fragment content="infoLabel">
@@ -247,7 +247,7 @@
                                 <color key="highlightedColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                             </label>
                             <textField hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="center" contentVerticalAlignment="center" usesAttributedText="YES" borderStyle="roundedRect" minimumFontSize="18" translatesAutoresizingMaskIntoConstraints="NO" id="9hW-Fk-wkN">
-                                <rect key="frame" x="121.66666666666669" y="119" width="150" height="34"/>
+                                <rect key="frame" x="145" y="122" width="150" height="34"/>
                                 <constraints>
                                     <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="150" id="9hM-1U-dtk"/>
                                 </constraints>
@@ -263,7 +263,7 @@
                                 <textInputTraits key="textInputTraits"/>
                             </textField>
                             <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="H7w-58-aXD">
-                                <rect key="frame" x="207" y="718" width="156" height="80"/>
+                                <rect key="frame" x="254" y="822" width="156" height="80"/>
                                 <subviews>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="773-n4-lob" userLabel="ViewButton">
                                         <rect key="frame" x="0.0" y="0.0" width="80" height="80"/>
@@ -307,7 +307,7 @@
                                 </subviews>
                             </stackView>
                             <stackView opaque="NO" contentMode="scaleToFill" spacing="45" translatesAutoresizingMaskIntoConstraints="NO" id="ohC-Ys-aa2" userLabel="editstackview">
-                                <rect key="frame" x="91.666666666666686" y="658" width="210" height="40"/>
+                                <rect key="frame" x="115" y="762" width="210" height="40"/>
                                 <subviews>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Lqm-Je-rDs" userLabel="cropButton">
                                         <rect key="frame" x="0.0" y="1.3333333333333321" width="40" height="38.666666666666671"/>
@@ -326,7 +326,7 @@
                                         </connections>
                                     </button>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="26F-k9-08O" userLabel="cancelButton">
-                                        <rect key="frame" x="84.999999999999986" y="0.66666666666666785" width="40" height="38.666666666666657"/>
+                                        <rect key="frame" x="85" y="0.66666666666666785" width="40" height="38.666666666666657"/>
                                         <constraints>
                                             <constraint firstAttribute="width" constant="40" id="AnK-Zj-ZMm"/>
                                             <constraint firstAttribute="height" constant="40" id="Zmm-oT-62r"/>
@@ -356,6 +356,27 @@
                                     </button>
                                 </subviews>
                             </stackView>
+                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="SSE-eb-R84" userLabel="TruckLabel">
+                                <rect key="frame" x="270" y="165" width="42.333333333333314" height="30.333333333333343"/>
+                                <accessibility key="accessibilityConfiguration">
+                                    <accessibilityTraits key="traits" none="YES"/>
+                                </accessibility>
+                                <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                                <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <state key="normal" title=" ">
+                                    <imageReference key="image" image="truck.box.fill" catalog="system" renderingMode="hierarchical">
+                                        <hierarchicalColors>
+                                            <color systemColor="linkColor"/>
+                                            <color systemColor="linkColor"/>
+                                            <color systemColor="linkColor"/>
+                                        </hierarchicalColors>
+                                    </imageReference>
+                                    <preferredSymbolConfiguration key="preferredSymbolConfiguration" scale="large"/>
+                                </state>
+                                <connections>
+                                    <action selector="stopCameraAction:" destination="zah-iI-EPt" eventType="touchUpInside" id="McZ-B3-vxh"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="qAR-pI-uT2"/>
                         <constraints>
@@ -368,12 +389,14 @@
                             <constraint firstItem="KlF-4H-k6I" firstAttribute="top" secondItem="qAR-pI-uT2" secondAttribute="top" constant="20" id="CS3-Rk-Wxs"/>
                             <constraint firstItem="3LQ-Ga-w4w" firstAttribute="centerX" secondItem="sqF-4e-2HU" secondAttribute="centerX" id="FSU-yR-cMT"/>
                             <constraint firstItem="ohC-Ys-aa2" firstAttribute="centerX" secondItem="sqF-4e-2HU" secondAttribute="centerX" id="J2j-qr-Dkx"/>
+                            <constraint firstItem="SSE-eb-R84" firstAttribute="leading" secondItem="3LQ-Ga-w4w" secondAttribute="trailing" constant="10" id="JGy-kW-afd"/>
                             <constraint firstItem="9hW-Fk-wkN" firstAttribute="centerX" secondItem="sqF-4e-2HU" secondAttribute="centerX" id="KmX-nr-HtE"/>
                             <constraint firstItem="JMv-UE-cvK" firstAttribute="centerX" secondItem="sqF-4e-2HU" secondAttribute="centerX" id="NIf-UH-gZ7"/>
                             <constraint firstAttribute="centerX" relation="greaterThanOrEqual" secondItem="KlF-4H-k6I" secondAttribute="trailing" priority="100" constant="8" id="Qwh-2A-AzL"/>
                             <constraint firstItem="ozY-dg-YOd" firstAttribute="top" secondItem="qAR-pI-uT2" secondAttribute="top" constant="10" id="TFT-we-noh"/>
                             <constraint firstItem="ozY-dg-YOd" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="9oq-op-NGV" secondAttribute="trailing" constant="8" symbolic="YES" id="YW6-zB-Lqs"/>
                             <constraint firstItem="H7w-58-aXD" firstAttribute="bottom" secondItem="qAR-pI-uT2" secondAttribute="bottom" constant="-20" id="aFA-bH-3Y9"/>
+                            <constraint firstItem="SSE-eb-R84" firstAttribute="centerY" secondItem="3LQ-Ga-w4w" secondAttribute="centerY" id="azt-wA-bft"/>
                             <constraint firstItem="JMv-UE-cvK" firstAttribute="centerY" secondItem="qAR-pI-uT2" secondAttribute="bottom" constant="-200" id="bL0-E2-Ew9"/>
                             <constraint firstItem="9oq-op-NGV" firstAttribute="leading" secondItem="KlF-4H-k6I" secondAttribute="leading" id="g5b-gW-Amg"/>
                             <constraint firstItem="9oq-op-NGV" firstAttribute="top" secondItem="qAR-pI-uT2" secondAttribute="top" constant="10" id="lFI-66-D3N"/>
@@ -388,6 +411,7 @@
                         </connections>
                     </glkView>
                     <connections>
+                        <outlet property="TruckLabel" destination="SSE-eb-R84" id="hq0-pu-Mf9"/>
                         <outlet property="cancelButton" destination="26F-k9-08O" id="NCT-j7-sMd"/>
                         <outlet property="changeButton" destination="ZX5-l5-wnh" id="Nit-XO-9f7"/>
                         <outlet property="cropButton" destination="Lqm-Je-rDs" id="CrG-St-R5E"/>
@@ -419,17 +443,17 @@
             <objects>
                 <viewController storyboardIdentifier="unsupportedDeviceMessage" id="v3G-nW-gVc" userLabel="Unsupported View Controller" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="hzM-1k-POo">
-                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <rect key="frame" x="0.0" y="0.0" width="440" height="956"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Unsupported Device" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" enabled="NO" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="kZt-ct-4KD">
-                                <rect key="frame" x="21" y="352" width="351.33333333333331" height="34"/>
+                                <rect key="frame" x="20" y="404" width="400" height="34"/>
                                 <fontDescription key="fontDescription" style="UICTFontTextStyleTitle1"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" enabled="NO" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="4Js-Hw-3QU">
-                                <rect key="frame" x="21" y="394" width="351.33333333333331" height="64.333333333333371"/>
+                                <rect key="frame" x="20" y="446" width="400" height="64.333333333333314"/>
                                 <string key="text">Slashscan requires a LiDAR-capable device, such as the second-generation iPad Pro 11-inch and fourth-generation iPad Pro 12.9-inch.</string>
                                 <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
                                 <nil key="textColor"/>
@@ -458,7 +482,7 @@
             <objects>
                 <viewController storyboardIdentifier="mapScene" id="880-Dp-0T2" userLabel="Map" customClass="MapViewController" customModule="SlashScan" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="g9p-Iz-uMc">
-                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <rect key="frame" x="0.0" y="0.0" width="440" height="956"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                         <viewLayoutGuide key="safeArea" id="Qj0-s3-VxQ"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
@@ -487,6 +511,7 @@
         <image name="scissors" catalog="system" width="128" height="94"/>
         <image name="square.and.arrow.down" catalog="system" width="114" height="128"/>
         <image name="stop.circle" catalog="system" width="128" height="123"/>
+        <image name="truck.box.fill" catalog="system" width="128" height="88"/>
         <image name="view.3d" catalog="system" width="128" height="76"/>
         <image name="xmark.circle" catalog="system" width="128" height="123"/>
         <systemColor name="labelColor">

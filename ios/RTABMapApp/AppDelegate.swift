@@ -46,7 +46,6 @@ func setDefaultsFromSettings() {
     //
     // VoxelSize : default 0.01
     UserDefaults.standard.set(0.01, forKey: "VoxelSize")
-
     
     // -----------------------------
     // [1] Blending (Online Blending)
@@ -157,14 +156,14 @@ func setDefaultsFromSettings() {
     UserDefaults.standard.set("-1", forKey: "MarkerSize")
 
     // DatabaseInMemory : default true
-    UserDefaults.standard.set(true, forKey: "DatabaseInMemory")
+    UserDefaults.standard.set(false, forKey: "DatabaseInMemory")
     
     // ----------------------------------------------------
     // Rendering Parameter (plist: Root)
     // ----------------------------------------------------
     
     // PointCloudDensity : default 1
-    UserDefaults.standard.set(1, forKey: "PointCloudDensity")
+    UserDefaults.standard.set(2, forKey: "PointCloudDensity")
     
     // MaxDepth : default 5.0
     UserDefaults.standard.set(5.0, forKey: "MaxDepth")

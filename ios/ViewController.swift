@@ -125,6 +125,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     @IBOutlet weak var cancelButton: UIButton!
     @IBOutlet weak var editsaveButton: UIButton!
     @IBOutlet weak var toastLabel: UILabel!
+    @IBOutlet weak var TruckLabel: UIButton!
 
     let SlashScan_TMP_DB = "slashscan.tmp.db"
     let SlashScan_RECOVERY_DB = "slashscan.tmp.recovery.db"
@@ -226,6 +227,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         statusLabel.text = ""
         infoLabel.text = ""
         titleContent.text = ""
+        TruckLabel.setTitle(" ", for: .normal)
         
         projectButton.layer.shadowOpacity = 0.3
         projectButton.layer.shadowOffset = CGSize.zero
@@ -715,7 +717,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                                                coords.altitude)
                         } else {
                             // CSV는 있으나 좌표값을 파싱하지 못함 (좌표값 없음)
-                            gpsString = "GPS: [not available]\n"
+                            gpsString = "GPS: [No coordinates found!]\n"
                         }
                     } else {
                         // CSV가 존재하지 않을 경우 현재 위치 정보 활용
@@ -758,7 +760,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                 }
                 else
                 {
-                    gpsString = "GPS: [not available?????]\n"
+                    gpsString = "GPS: [Unknown Error]\n"
                 }
             }
             self.statusLabel.text = ""
@@ -998,6 +1000,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = viewMode != 0 || !mHudVisible
             titleContent.isHidden = true
+            TruckLabel.isHidden = true
             infoLabel.isHidden = true
             statusLabel.isHidden = true
             actionNewScanEnabled = !mDataRecording
@@ -1027,6 +1030,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = viewMode != 0 || !mHudVisible
             titleContent.isHidden = true
+            TruckLabel.isHidden = true
             actionNewScanEnabled = !mDataRecording
             actionNewDataRecording = mDataRecording
             actionSaveEnabled = false
@@ -1057,6 +1061,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = true
             titleContent.isHidden = true
+            TruckLabel.isHidden = true
             actionNewScanEnabled = false
             actionNewDataRecording = false
             actionSaveEnabled = false
@@ -1083,6 +1088,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = true
             titleContent.isHidden = !mHudVisible
+            TruckLabel.isHidden = !UserDefaults.standard.bool(forKey: "TruckView")
             infoLabel.isHidden = !mHudVisible
             statusLabel.isHidden = !mHudVisible
             actionNewScanEnabled = true
@@ -1111,6 +1117,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = true
             titleContent.isHidden = !mHudVisible
+            TruckLabel.isHidden = !UserDefaults.standard.bool(forKey: "TruckView")
             infoLabel.isHidden = !mHudVisible
             statusLabel.isHidden = !mHudVisible
             actionNewScanEnabled = true
@@ -1139,6 +1146,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = true
             titleContent.isHidden = false
+            TruckLabel.isHidden = !UserDefaults.standard.bool(forKey: "TruckView")
             infoLabel.isHidden = false
             statusLabel.isHidden = true
             actionNewScanEnabled = true
@@ -1172,6 +1180,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             stopCameraButton.isHidden = true
             infoLabel.isHidden = true
             titleContent.isHidden = true
+            TruckLabel.isHidden = true
             statusLabel.isHidden = true
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = true
@@ -1764,7 +1773,9 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         let defaults = UserDefaults.standard
  
         //let appendMode = defaults.bool(forKey: "AppendMode")
-        
+        if(titleContent.isHidden == false) {
+            TruckLabel.isHidden = !defaults.bool(forKey: "TruckView")
+        }
         // update preference
         rtabmap!.setOnlineBlending(enabled: defaults.bool(forKey: "Blending"));
         rtabmap!.setNodesFiltering(enabled: defaults.bool(forKey: "NodesFiltering"));
@@ -2330,32 +2341,25 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             self.rtabmap?.save(databasePath: filePath)
             
             if UserDefaults.standard.bool(forKey: "SaveGPS") {
-                // 새로운 CSV 파일명 (db파일명 기반)
                 let newCSVFileName = (fileName as NSString).deletingPathExtension + ".csv"
                 let newCSVFilePath = self.getDocumentDirectory().appendingPathComponent(newCSVFileName)
-                
-                // 이전 DB 경로가 있고, 그에 해당하는 CSV 파일이 존재하면 rename
+
                 if let oldDBPath = self.openedDatabasePath {
                     let oldCSVFileName = (oldDBPath.lastPathComponent as NSString).deletingPathExtension + ".csv"
                     let oldCSVFilePath = self.getDocumentDirectory().appendingPathComponent(oldCSVFileName)
                     
                     if FileManager.default.fileExists(atPath: oldCSVFilePath.path) {
-                        // 기존 CSV가 존재하면 새로운 이름으로 변경
                         do {
-                            // 만약 새 CSV 이름과 기존 CSV 이름이 다르다면 rename
                             if oldCSVFilePath.lastPathComponent != newCSVFileName {
-                                // 이미 동일한 CSV가 있다면 삭제(덮어쓰기)
                                 if FileManager.default.fileExists(atPath: newCSVFilePath.path) {
                                     try FileManager.default.removeItem(at: newCSVFilePath)
                                 }
-                               // try FileManager.default.moveItem(at: oldCSVFilePath, to: newCSVFilePath)
                             }
                         } catch {
                             print("Failed to rename CSV file: \(error)")
                         }
                     }
                 }
-                // 새로운 CSV 파일이 없을 경우 현재 위치 기반으로 CSV 생성/추가
                 if !FileManager.default.fileExists(atPath: newCSVFilePath.path) {
                     self.saveCSV(fileName: fileName)
                 }
@@ -2560,7 +2564,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                                 if(withStandardMeshExport)
                                 {
                                     //ColoredMesh, TexturedMesh는 isOBJ 차이
-                                    self.export(isOBJ: false, meshing: true, regenerateCloud: false, optimized: true, optimizedMaxPolygons: 200000, previousState: previousState);
+                                    self.export(isOBJ: false, meshing: true, regenerateCloud: false, optimized: true, optimizedMaxPolygons: 100000, previousState: previousState);
                                 }
                                 if(pointcloud)
                                 {
@@ -2646,7 +2650,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     
     // MARK: - File OPEN
     func openDatabase(fileUrl: URL) {
-        
         if(mState == .STATE_CAMERA) {
             stopMapping(ignoreSaving: true)
         }
@@ -2657,13 +2660,11 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         
         let progressDialog = UIAlertController(
             title: "Loading",
-            message: String(format: "Loading \"%@\". Please wait while point clouds and/or meshes are created...", fileName),
+            message: String(format: "Loading \"%@\". Please wait while data is loading.", fileName),
             preferredStyle: .alert
         )
         
-        // 사용자에게 진행 상황을 표시
         self.present(progressDialog, animated: true)
-
         updateState(state: .STATE_PROCESSING)
         var status = 0
         DispatchQueue.background(background: {
@@ -2675,7 +2676,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                 clearDatabase: false
             )
         }, completion:{
-            // 메인 스레드
             self.dismiss(animated: true)
             if(status == -1) {
                 self.showToast(message: "Failed to optimize the graph, unable to display the map.", seconds: 4)
@@ -2694,7 +2694,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                     self.showToast(message: "Data has been loaded.", seconds: 2)
                 }
                 
-                // 데이터베이스가 성공적으로 열렸다면 CSV 파일 확인
+                // CSV에서 볼륨 정보를 읽어 titleContent와 TruckLabel 업데이트
                 if let databasePath = self.openedDatabasePath {
                     let csvFileName = (databasePath.lastPathComponent as NSString).deletingPathExtension + ".csv"
                     let name = (databasePath.lastPathComponent as NSString).deletingPathExtension
@@ -2703,26 +2703,36 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                     if FileManager.default.fileExists(atPath: csvFileURL.path) {
                         if let csvData = self.readCSV(fileName: csvFileName, name: name) {
                             let volume = csvData.volume
-                            DispatchQueue.main.async {
+                            if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
+                                let volumeStr = self.formatVolume(volume)
+                                self.titleContent.text = "Volume : \(volumeStr) m³"
+                            }
+                            else {
+                                let imp_volume = round(100 * volume * 35.3147) / 100
+                                let volumeStr = self.formatVolume(imp_volume)
+                                self.titleContent.text = "Volume : \(volumeStr) ft³"
+                            }
+                            // 트럭 개수 계산
+                            var volumeForTruck: Double = volume
+                            let truckUnit = UserDefaults.standard.integer(forKey: "TruckUnit")
+                            if truckUnit == 1 {
                                 if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
-                                    // 1) metric (m³)
-                                    let volumeStr = self.formatVolume(volume)
-                                    self.titleContent.text = "Volume : \(volumeStr) m³"
+                                    volumeForTruck = volume * 1.30795
                                 } else {
-                                    // 2) imperial (ft³)
-                                    let imp_volume = round(100 * volume * 35.3147) / 100
-                                    let volumeStr = self.formatVolume(imp_volume)
-                                    self.titleContent.text = "Volume : \(volumeStr) ft³"
+                                    volumeForTruck = volume / 27.0
                                 }
                             }
-                        } else {
-                            DispatchQueue.main.async {
-                                self.titleContent.text = "Missing Volume"
+                            let truckSize = UserDefaults.standard.double(forKey: "TruckSize")
+                            var numTrucks = 0
+                            if truckSize > 0 {
+                                numTrucks = Int(ceil(volumeForTruck / truckSize))
                             }
+                            self.TruckLabel.setTitle(" \(numTrucks)", for: .normal)
                         }
                     } else {
                         DispatchQueue.main.async {
                             self.titleContent.text = "Missing Volume"
+                            self.TruckLabel.setTitle("0", for: .normal)
                         }
                     }
                 }
@@ -3052,7 +3062,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             self.updateState(state: .STATE_VISUALIZING)
             self.rtabmap!.setWireframe(enabled: false)
             self.closeVisualization()
-            rtabmap?.removePoint();
+            rtabmap?.removePoint()
             rtabmap?.setGridVisible(visible: UserDefaults.standard.bool(forKey: "GridView"))
             if self.isPaused {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -3075,19 +3085,37 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                             let volumeStr = self.formatVolume(imp_volume)
                             self.titleContent.text = "Volume : \(volumeStr) ft³"
                         }
+                        // # of trucks calculation
+                        var volumeForTruck: Double = volume
+                        let truckUnit = UserDefaults.standard.integer(forKey: "TruckUnit")
+                        if truckUnit == 1 {
+                            if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
+                                volumeForTruck = volume * 1.30795
+                            } else {
+                                volumeForTruck = volume / 27.0
+                            }
+                        }
+                        let truckSize = UserDefaults.standard.double(forKey: "TruckSize")
+                        var numTrucks = 0
+                        if truckSize > 0 {
+                            numTrucks = Int(ceil(volumeForTruck / truckSize))
+                        }
+                        self.TruckLabel.setTitle(" \(numTrucks)", for: .normal)
                     }
                 } else {
                     DispatchQueue.main.async {
                         self.titleContent.text = "Missing Volume"
+                        self.TruckLabel.setTitle("0", for: .normal)
                     }
                 }
             } else {
                 DispatchQueue.main.async {
                     self.titleContent.text = "Missing Volume"
+                    self.TruckLabel.setTitle("0", for: .normal)
                 }
             }
         }
-        else{
+        else {
             self.showToast(message: "Measurement Mode ON", seconds: 3)
             editButton.tintColor = .systemRed
             self.updateState(state: .STATE_EDIT)
@@ -3095,10 +3123,10 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             rtabmap?.setGridVisible(visible: false)
             if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
                 self.titleContent.text = "Volume : 0 m³"
-            }
-            else {
+            } else {
                 self.titleContent.text = "Volume : 0 ft³"
             }
+            self.TruckLabel.setTitle("0", for: .normal)
         }
     }
 
@@ -3150,33 +3178,48 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     }
     
     @IBAction func editsaveButtonTapped(_ sender: UIButton) {
-        //Volume Calculation
+        // Volume Calculation
         self.showToast(message: "The volume has been calculated.", seconds: 4)
-        let showvolume = round(100 * rtabmap!.calculateMeshVolume()) / 100
+        var showvolume = round(100 * rtabmap!.calculateMeshVolume()) / 100
         if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
             self.titleContent.text = "Volume : \(showvolume) m³"
-        }
-        else {
-            let showvolume = round(100 * rtabmap!.calculateMeshVolume() * 35.3147) / 100
+        } else {
+            showvolume = round(100 * rtabmap!.calculateMeshVolume() * 35.3147) / 100
             self.titleContent.text = "Volume : \(showvolume) ft³"
         }
-        // Update the CSV with the new volume
+        
+        // 계산된 볼륨을 트럭 단위에 맞게 변환
+        var volumeForTruck: Double = showvolume
+        let truckUnit = UserDefaults.standard.integer(forKey: "TruckUnit")
+        if truckUnit == 1 {
+            if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
+                // Metric: m³ → cubic yard (1 m³ = 1.30795 yd³)
+                volumeForTruck = showvolume * 1.30795
+            } else {
+                // Imperial: ft³ → cubic yard (1 yd³ = 27 ft³)
+                volumeForTruck = showvolume / 27.0
+            }
+        }
+        let truckSize = UserDefaults.standard.double(forKey: "TruckSize")
+        var numTrucks = 0
+        if truckSize > 0 {
+            numTrucks = Int(ceil(volumeForTruck / truckSize))
+        }
+        self.TruckLabel.setTitle(" \(numTrucks)", for: .normal)
+
         if let databasePath = self.openedDatabasePath {
             let csvFileName = (databasePath.lastPathComponent as NSString).deletingPathExtension + ".csv"
             let name = (databasePath.lastPathComponent as NSString).deletingPathExtension
             self.updateVolumeInCSV(fileName: csvFileName, name: name, volume: showvolume)
         }
     }
+
     @IBAction func manualButtonTapped(_ sender: UIButton) {
-        // 팝업 뷰컨트롤러 인스턴스화
         let popupVC = ManualPopupViewController()
-        
-        // 팝업 스타일 설정 (overFullScreen, fullScreen 등)
+
         popupVC.modalPresentationStyle = .overFullScreen
-        // 전환 애니메이션 (옵션)
         popupVC.modalTransitionStyle = .crossDissolve
-        
-        // 모달 프레젠테이션
+
         self.present(popupVC, animated: true, completion: nil)
     }
 }
@@ -3436,14 +3479,14 @@ final class ManualPopupViewController: UIViewController {
             manualView.centerXAnchor.constraint(equalTo: self.view.centerXAnchor),
             manualView.centerYAnchor.constraint(equalTo: self.view.centerYAnchor),
             manualView.widthAnchor.constraint(equalToConstant: deviceWidth),
-            manualView.heightAnchor.constraint(lessThanOrEqualToConstant: 450)
+            manualView.heightAnchor.constraint(lessThanOrEqualToConstant: 500)
         ])
 
         let verticalStack = UIStackView()
         verticalStack.axis = .vertical
         verticalStack.alignment = .fill
         verticalStack.distribution = .equalSpacing
-        verticalStack.spacing = 30
+        verticalStack.spacing = 20
         verticalStack.translatesAutoresizingMaskIntoConstraints = false
         
         manualView.addSubview(verticalStack)
@@ -3479,21 +3522,39 @@ final class ManualPopupViewController: UIViewController {
 
         let stepView3 = createManualStep(
             image: UIImage(systemName: "cube.transparent")!.withRenderingMode(.alwaysTemplate),
-            text: "Step 3: Press the yellow button to crop and measure the acquired data.",
+            text: "Step 3: Press the yellow button to enter editing mode.",
             tintColor: .systemYellow,
             imageSize: imageSize,
             fontSize: fontSize
         )
         verticalStack.addArrangedSubview(stepView3)
-
+        
         let stepView4 = createManualStep(
+            image: UIImage(systemName: "scissors")!.withRenderingMode(.alwaysTemplate),
+            text: "Step 4: Tap the scissor icon and select the crop area. Tap again to disable.",
+            tintColor: .black,
+            imageSize: imageSize,
+            fontSize: fontSize
+        )
+        verticalStack.addArrangedSubview(stepView4)
+        
+        let stepView5 = createManualStep(
+            image: UIImage(systemName: "cube.transparent.fill")!.withRenderingMode(.alwaysTemplate),
+            text: "Step 5: Press the cube icon to calculate the volume.",
+            tintColor: .black,
+            imageSize: imageSize,
+            fontSize: fontSize
+        )
+        verticalStack.addArrangedSubview(stepView5)
+
+        let stepView6 = createManualStep(
             image: UIImage(systemName: "map.circle")!.withRenderingMode(.alwaysTemplate),
             text: "Open the map to view and manage the acquired data.",
             tintColor: .systemGreen,
             imageSize: imageSize,
             fontSize: fontSize
         )
-        verticalStack.addArrangedSubview(stepView4)
+        verticalStack.addArrangedSubview(stepView6)
 
         let closeButton = UIButton(type: .system)
         closeButton.setTitle("Cancel", for: .normal)  // "Close"로 해도 무방
