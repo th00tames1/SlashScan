@@ -43,6 +43,10 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     private var mLoopThr = 0.11
     private var mDataRecording = false
     
+    private var settingsTapCount = 0
+    private var isAdminMode = false
+    private let adminTapThreshold = 10
+    
     // UI states
     private enum State {
         case STATE_WELCOME,    // Camera/Motion off - showing only buttons open and start new scan
@@ -1281,26 +1285,30 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             self.exportOBJPLY()
         }))
         
-//        if(actionOptimizeEnabled) {
-//            fileMenuChildren.append(optimizeMenu)
-//        }
-//        else {
-//            fileMenuChildren.append(UIAction(title: "Optimize...", attributes: .disabled, state: .off, handler: { _ in
-//            }))
-//        }
-//        if(actionExportEnabled) {
-//            fileMenuChildren.append(exportMenu)
-//        }
-//        else {
-//            fileMenuChildren.append(UIAction(title: "Assemble...", attributes: .disabled, state: .off, handler: { _ in
-//            }))
-//        }
+        if isAdminMode || actionOptimizeEnabled {
+            fileMenuChildren.append(optimizeMenu)
+        } else {
+            fileMenuChildren.append(UIAction(title: "Optimize...",
+                                             attributes: .disabled,
+                                             state: .off,
+                                             handler: { _ in }))
+        }
+
+        if isAdminMode || actionExportEnabled {
+            fileMenuChildren.append(exportMenu)
+        } else {
+            fileMenuChildren.append(UIAction(title: "Assemble...",
+                                             attributes: .disabled,
+                                             state: .off,
+                                             handler: { _ in }))
+        }
         
         //MARK: UI - File menu Tab
         let fileMenu = UIMenu(title: "File", options: .displayInline, children: fileMenuChildren)
         
         let settingsMenu = UIMenu(title: "Settings", options: .displayInline, children: [
             UIAction(title: "Settings", image: UIImage(systemName: "gearshape.2"), attributes: actionSettingsEnabled ? [] : .disabled, state: .off, handler: { _ in
+                self.handleSettingsTapped()
                 guard let settingsUrl = URL(string: UIApplication.openSettingsURLString) else {
                     return
                 }
@@ -1555,6 +1563,16 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                     present(alertController, animated: true)
                 }
             }
+        }
+    }
+    
+    private func handleSettingsTapped() {
+        settingsTapCount += 1
+        if settingsTapCount >= adminTapThreshold {
+            isAdminMode.toggle()
+            settingsTapCount = 0
+            showToast(message: isAdminMode ? "Admin mode ON" : "Admin mode OFF", seconds: 2)
+            updateState(state: mState)
         }
     }
     
