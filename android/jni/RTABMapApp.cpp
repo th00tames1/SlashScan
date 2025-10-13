@@ -708,16 +708,6 @@ int RTABMapApp::openDatabase(const std::string & databasePath, bool databaseInMe
     {
         rtabmapThread_->setDetectorRate(uStr2Float(parameters.at(rtabmap::Parameters::kRtabmapDetectionRate())));
     }
-
-    // Generate all meshes
-     // ⚡ Fast path: don't generate all meshes on open
-     if(!optimize) {
-         // 시각화는 위에서 로드된 optimized mesh로 즉시 진행됨
-         openingDatabase_ = false;
-         rtabmapMutex_.unlock();
-         return status; // 0=없음, 1=cloud, 2=mesh, 3=texture mesh
-    }
-     // (optimize==true 인 경우에만 아래 무거운 전체 메쉬 생성 수행)
     std::map<int, rtabmap::Signature> signatures;
     std::map<int, rtabmap::Transform> poses;
     std::multimap<int, rtabmap::Link> links;

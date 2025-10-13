@@ -255,6 +255,10 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         changeButton.layer.shadowOffset = CGSize.zero
         changeButton.layer.shadowRadius = 4
         
+        viewButton.layer.shadowOpacity = 0.3
+        viewButton.layer.shadowOffset = CGSize.zero
+        viewButton.layer.shadowRadius = 2
+        
         updateDatabases()
         
         let doubleTap = UITapGestureRecognizer(target: self, action: #selector(doubleTapped(_:)))
