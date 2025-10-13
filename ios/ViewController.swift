@@ -105,6 +105,8 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     private var isProjectPopupShowing = false
     private var isCropping: Bool = false
     private var wasInitializing = false
+    private let forceHideDebug = true
+    private var hasVolume = false
     
     private var editRectStart: CGPoint?
     private var editRectCurrent: CGRect?
@@ -783,7 +785,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                 dataName = ""
             }
 
-            if self.statusShown {
+            if self.statusShown && !self.forceHideDebug {
                 self.statusLabel.text =
                     self.statusLabel.text! +
                     "Status: \(self.getStateString(state: self.mState))\n" +
@@ -792,7 +794,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                     gpsString +
                     "Memory Usage : \(usedMem) MB\n"
             }
-            if self.debugShown {
+            if self.debugShown && !self.forceHideDebug {
                 self.statusLabel.text =
                     self.statusLabel.text! + "\n"
                 var lightString = "\n"
@@ -825,7 +827,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     }
 
     func cameraInfoEventReceived(_ rtabmap: RTABMap, type: Int, key: String, value: String) {
-        if(self.debugShown && key == "UpstreamRelocationFiltered")
+        if(self.debugShown && !self.forceHideDebug && key == "UpstreamRelocationFiltered")
         {
             DispatchQueue.main.async {
                 self.dismiss(animated: true)
@@ -1091,10 +1093,10 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             stopCameraButton.isHidden = true
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = true
-            titleContent.isHidden = !mHudVisible
-            TruckLabel.isHidden = !UserDefaults.standard.bool(forKey: "TruckView")
+            titleContent.isHidden = !mHudVisible || !hasVolume
+            TruckLabel.isHidden = !hasVolume || !UserDefaults.standard.bool(forKey: "TruckView")
             infoLabel.isHidden = !mHudVisible
-            statusLabel.isHidden = !mHudVisible
+            statusLabel.isHidden = true
             actionNewScanEnabled = true
             actionNewDataRecording = true
             actionSaveEnabled = mMapNodes>0
@@ -1120,10 +1122,10 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             stopCameraButton.isHidden = true
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = true
-            titleContent.isHidden = !mHudVisible
-            TruckLabel.isHidden = !UserDefaults.standard.bool(forKey: "TruckView")
+            titleContent.isHidden = !mHudVisible || !hasVolume
+            TruckLabel.isHidden = !hasVolume || !UserDefaults.standard.bool(forKey: "TruckView")
             infoLabel.isHidden = !mHudVisible
-            statusLabel.isHidden = !mHudVisible
+            statusLabel.isHidden = true
             actionNewScanEnabled = true
             actionNewDataRecording = true
             actionSaveEnabled = mState != .STATE_WELCOME && mMapNodes>0
@@ -1149,8 +1151,8 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             stopCameraButton.isHidden = true
 //            orthoDistanceSlider.isHidden = true
 //            orthoGridSlider.isHidden = true
-            titleContent.isHidden = false
-            TruckLabel.isHidden = !UserDefaults.standard.bool(forKey: "TruckView")
+            titleContent.isHidden = !hasVolume
+            TruckLabel.isHidden = !hasVolume || !UserDefaults.standard.bool(forKey: "TruckView")
             infoLabel.isHidden = false
             statusLabel.isHidden = true
             actionNewScanEnabled = true
@@ -1281,28 +1283,28 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         fileMenuChildren.append(UIAction(title: "Save", image: UIImage(systemName: "square.and.arrow.down"), attributes: actionSaveEnabled ? [] : .disabled, state: .off, handler: { _ in
             self.save()
         }))
-        fileMenuChildren.append(UIAction(title: "Export (.ply)", image: UIImage(systemName: "square.and.arrow.up"), attributes: actionSaveEnabled ? [] : .disabled, state: .off, handler: { _ in
-            self.exportOBJPLY()
-        }))
-        
-        if isAdminMode || actionOptimizeEnabled {
-            fileMenuChildren.append(optimizeMenu)
-        } else {
-            fileMenuChildren.append(UIAction(title: "Optimize...",
-                                             attributes: .disabled,
-                                             state: .off,
-                                             handler: { _ in }))
-        }
-
-        if isAdminMode || actionExportEnabled {
-            fileMenuChildren.append(exportMenu)
-        } else {
-            fileMenuChildren.append(UIAction(title: "Assemble...",
-                                             attributes: .disabled,
-                                             state: .off,
-                                             handler: { _ in }))
-        }
-        
+//        fileMenuChildren.append(UIAction(title: "Export (.ply)", image: UIImage(systemName: "square.and.arrow.up"), attributes: actionSaveEnabled ? [] : .disabled, state: .off, handler: { _ in
+//            self.exportOBJPLY()
+//        }))
+//        
+//        if isAdminMode || actionOptimizeEnabled {
+//            fileMenuChildren.append(optimizeMenu)
+//        } else {
+//            fileMenuChildren.append(UIAction(title: "Optimize...",
+//                                             attributes: .disabled,
+//                                             state: .off,
+//                                             handler: { _ in }))
+//        }
+//
+//        if isAdminMode || actionExportEnabled {
+//            fileMenuChildren.append(exportMenu)
+//        } else {
+//            fileMenuChildren.append(UIAction(title: "Assemble...",
+//                                             attributes: .disabled,
+//                                             state: .off,
+//                                             handler: { _ in }))
+//        }
+//        
         //MARK: UI - File menu Tab
         let fileMenu = UIMenu(title: "File", options: .displayInline, children: fileMenuChildren)
         
@@ -2633,6 +2635,9 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             updateState(state: .STATE_WELCOME)
             statusLabel.text = ""
         }
+        self.hasVolume = false
+        self.titleContent.isHidden = true
+        self.TruckLabel.isHidden = true
     }
 
     func shareFile(_ fileUrl: URL) {
@@ -2689,7 +2694,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             self.optimizedGraphShown = true
             status = self.rtabmap!.openDatabase(
                 databasePath: self.openedDatabasePath!.path,
-                databaseInMemory: true,
+                databaseInMemory: false,
                 optimize: false,
                 clearDatabase: false
             )
@@ -2747,10 +2752,17 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                             }
                             self.TruckLabel.setTitle(" \(numTrucks)", for: .normal)
                         }
+                        self.hasVolume = true
+                        self.titleContent.isHidden = false
+                        self.TruckLabel.isHidden = false
                     } else {
                         DispatchQueue.main.async {
                             self.titleContent.text = "Missing Volume"
                             self.TruckLabel.setTitle("0", for: .normal)
+                            self.hasVolume = false
+                            self.titleContent.isHidden = true
+                            self.TruckLabel.isHidden = true
+
                         }
                     }
                 }
@@ -3120,16 +3132,23 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                         }
                         self.TruckLabel.setTitle(" \(numTrucks)", for: .normal)
                     }
+                    self.hasVolume = true
                 } else {
                     DispatchQueue.main.async {
                         self.titleContent.text = "Missing Volume"
                         self.TruckLabel.setTitle("0", for: .normal)
+                        self.hasVolume = false
+                        self.titleContent.isHidden = true
+                        self.TruckLabel.isHidden = true
                     }
                 }
             } else {
                 DispatchQueue.main.async {
                     self.titleContent.text = "Missing Volume"
                     self.TruckLabel.setTitle("0", for: .normal)
+                    self.hasVolume = false
+                    self.titleContent.isHidden = true
+                    self.TruckLabel.isHidden = true
                 }
             }
         }
@@ -3139,12 +3158,8 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             self.updateState(state: .STATE_EDIT)
             self.rtabmap!.setWireframe(enabled: true)
             rtabmap?.setGridVisible(visible: false)
-            if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
-                self.titleContent.text = "Volume : 0 m³"
-            } else {
-                self.titleContent.text = "Volume : 0 ft³"
-            }
-            self.TruckLabel.setTitle("0", for: .normal)
+            titleContent.isHidden = true
+            TruckLabel.isHidden = true
         }
     }
 
@@ -3224,6 +3239,10 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             numTrucks = Int(ceil(volumeForTruck / truckSize))
         }
         self.TruckLabel.setTitle(" \(numTrucks)", for: .normal)
+        
+        hasVolume = true
+        titleContent.isHidden = false
+        TruckLabel.isHidden = !UserDefaults.standard.bool(forKey: "TruckView")
 
         if let databasePath = self.openedDatabasePath {
             let csvFileName = (databasePath.lastPathComponent as NSString).deletingPathExtension + ".csv"
