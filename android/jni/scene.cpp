@@ -31,9 +31,11 @@
 #include <numeric> // std::accumulate
 
 #include <glm/gtx/transform.hpp>
-
+#include <glm/gtc/type_ptr.hpp>
+#include <cfloat>
 #include "scene.h"
 #include "util.h"
+#include <Eigen/Dense>
 
 // We want to represent the device properly with respect to the ground so we'll
 // add an offset in z to our origin. We'll set this offset to 1.3 meters based
@@ -69,7 +71,87 @@ const std::string kGraphFragmentShader =
     "  gl_FragColor = vec4(v_color.z, v_color.y, v_color.x, 1.0);\n"
     "}\n";
 
+// ---- Marker point-sprite shader (round points) ----
+const std::string kMarkerVertexShader =
+    "precision mediump float;\n"
+    "attribute vec3 vertex;\n"
+    "uniform mat4 mvp;\n"
+    "uniform float pointSize;\n"
+    "void main() {\n"
+    "  gl_Position = mvp * vec4(vertex, 1.0);\n"
+    "  gl_PointSize = pointSize;\n"
+    "}\n";
+
+const std::string kMarkerFragmentShader =
+    "precision mediump float;\n"
+    "uniform vec3 color;\n"
+    "void main() {\n"
+    "  vec2 uv = gl_PointCoord * 2.0 - 1.0;\n"
+    "  if(dot(uv, uv) > 1.0) discard;\n"
+    "  gl_FragColor = vec4(color, 1.0);\n"
+    "}\n";
+
+// Static program/flags for sphere markers
+static GLuint g_marker_shader_program = 0;
+static bool   g_useSphereMarkers = true;
+static float  g_markerPointSize  = 24.0f; // pixels
+
 double totalVolume = 0.0;
+
+
+namespace {
+struct GroundPlane {
+    double a{0.0}, b{0.0}, c{0.0};
+    bool valid{false};
+};
+
+inline double projectedAreaXZ(const pcl::PointXYZ& v0,
+                              const pcl::PointXYZ& v1,
+                              const pcl::PointXYZ& v2)
+{
+    return 0.5 * std::fabs( (v1.x - v0.x)*(v2.z - v0.z) - (v2.x - v0.x)*(v1.z - v0.z) );
+}
+
+inline double planeY(double x, double z, const GroundPlane& P)
+{
+    return P.a * x + P.b * z + P.c;
+}
+
+inline GroundPlane fitGroundPlaneFromMarkers(const std::vector<rtabmap::Transform>& markerPoses)
+{
+    GroundPlane P;
+    const int N = static_cast<int>(markerPoses.size());
+    if (N == 0) return P;
+
+    if (N < 3) {
+        double meanY = 0.0;
+        for (const auto& t : markerPoses) meanY += t.y();
+        meanY /= double(N);
+        P.a = 0.0; P.b = 0.0; P.c = meanY; P.valid = true;
+        return P;
+    }
+
+    Eigen::MatrixXd A(N, 3);
+    Eigen::VectorXd y(N);
+    for (int i=0; i<N; ++i) {
+        const auto& t = markerPoses[i];
+        A(i,0) = t.x();
+        A(i,1) = t.z();
+        A(i,2) = 1.0;
+        y(i)   = t.y();
+    }
+
+    const Eigen::Matrix3d ATA = A.transpose() * A;
+    if (std::fabs(ATA.determinant()) < 1e-12) {
+        double meanY = y.mean();
+        P.a = 0.0; P.b = 0.0; P.c = meanY; P.valid = true;
+        return P;
+    }
+    const Eigen::Vector3d sol = ATA.ldlt().solve(A.transpose() * y);
+    P.a = sol(0); P.b = sol(1); P.c = sol(2); P.valid = true;
+    return P;
+}
+} // namespace
 
 Scene::Scene() :
         background_renderer_(0),
@@ -154,6 +236,13 @@ void Scene::InitGLContent()
         graph_shader_program_ = tango_gl::util::CreateProgram(kGraphVertexShader.c_str(), kGraphFragmentShader.c_str());
         UASSERT(graph_shader_program_ != 0);
     }
+    // Create marker point-sprite shader program
+    if (g_marker_shader_program == 0) {
+        g_marker_shader_program =
+            tango_gl::util::CreateProgram(kMarkerVertexShader.c_str(), kMarkerFragmentShader.c_str());
+        UASSERT(g_marker_shader_program != 0);
+    }
+
 }
 
 //Should only be called in OpenGL thread!
@@ -177,6 +266,12 @@ void Scene::DeleteResources() {
     if (graph_shader_program_) {
         glDeleteShader(graph_shader_program_);
         graph_shader_program_ = 0;
+
+    if (g_marker_shader_program) {
+        glDeleteShader(g_marker_shader_program);
+        g_marker_shader_program = 0;
+    }
+
     }
 
     if(fboId_>0)
@@ -705,16 +800,62 @@ int Scene::Render(const float * uvsTransformed, glm::mat4 arViewMatrix, glm::mat
     }
     
     //=====================================================
-    // (2) 마커(Axis) 렌더링
+    // (2) 마커(Axis) 렌더링 (disabled when sphere markers on)
+if (!g_useSphereMarkers) {
+    //
     for(std::map<int, tango_gl::Axis*>::const_iterator iter=markers_.begin();
         iter!=markers_.end();
         ++iter)
     {
         iter->second->Render(projectionMatrix, viewMatrix);
     }
+}
+
 
     //=====================================================
-    // (3) 마커 사이 선(Line) 렌더링
+    
+    // (2-NEW) Sphere (round) marker rendering using point sprites
+    if (g_useSphereMarkers && !markerPoses_.empty()) {
+        glUseProgram(g_marker_shader_program);
+
+        // Set color (RGB), similar to line color (pink-ish)
+        GLint colorHandle = glGetUniformLocation(g_marker_shader_program, "color");
+        glUniform3f(colorHandle, 0.0f, 1.0f, 0.0f);
+
+        // Point size
+        GLint sizeHandle  = glGetUniformLocation(g_marker_shader_program, "pointSize");
+        glUniform1f(sizeHandle, g_markerPointSize);
+
+        // MVP
+        GLint mvpHandle = glGetUniformLocation(g_marker_shader_program, "mvp");
+        glm::mat4 mvp = projectionMatrix * viewMatrix;
+        glUniformMatrix4fv(mvpHandle, 1, GL_FALSE, glm::value_ptr(mvp));
+
+        // Build a small array of marker positions
+        std::vector<glm::vec3> pts;
+        pts.reserve(markerPoses_.size());
+        for (const auto &t : markerPoses_) {
+            pts.emplace_back(t.x(), t.y(), t.z());
+        }
+
+        GLuint vbo = 0;
+        glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, pts.size()*sizeof(glm::vec3), pts.data(), GL_STATIC_DRAW);
+
+        GLint vertexHandle = glGetAttribLocation(g_marker_shader_program, "vertex");
+        glEnableVertexAttribArray(vertexHandle);
+        glVertexAttribPointer(vertexHandle, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+        glDrawArrays(GL_POINTS, 0, (GLsizei)pts.size());
+
+        glDisableVertexAttribArray(vertexHandle);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glDeleteBuffers(1, &vbo);
+
+        glUseProgram(0);
+    }
+// (3) 마커 사이 선(Line) 렌더링
     if(markerPoses_.size() > 1)
     {
         glUseProgram(graph_shader_program_);
@@ -1268,115 +1409,82 @@ void Scene::filterMeshInsidePolygon(
     mesh.polygons = newPolygons;
 }
 
-/**
- * @brief Scene::calculateMeshVolumeByPolygon
- *  crop에 사용된 폴리곤(마커)들의 3D 중심점을 기준으로,
- *  해당 meshId의 메쉬 (이미 crop된 상태)를 대상으로 부피를 계산한다.
- *
- *  - (A) 폴리곤(마커) 중심점 = 모든 마커 x,y,z 평균
- *  - (B) 위 점을 기준점 c로 하여, 삼각형 테트라볼륨을 누적 계산
- *
- * @param meshId : pointClouds_에 등록된 메쉬 ID
- * @return 계산된 부피 (양수)
- */
 double Scene::calculateMeshVolume(int meshId)
 {
     totalVolume = 0.0;
-    // (1) pointClouds_에서 대상 메쉬 찾기
-    auto iter = pointClouds_.find(meshId);
-    if(iter == pointClouds_.end())
-    {
-        UERROR("calculateMeshVolumeByPolygon() -> Cannot find mesh with id=%d", meshId);
+
+    // (1) 대상 drawable/mesh 찾기
+    auto it = pointClouds_.find(meshId);
+    if (it == pointClouds_.end()) {
+        UERROR("calculateMeshVolume() -> Cannot find mesh id=%d", meshId);
         return 0.0;
     }
-    PointCloudDrawable * drawable = iter->second;
-    if(!drawable->hasMesh())
-    {
-        UERROR("calculateMeshVolumeByPolygon() -> This drawable (id=%d) has no mesh!", meshId);
+    PointCloudDrawable* drawable = it->second;
+    if (!drawable->hasMesh()) {
+        UERROR("calculateMeshVolume() -> Drawable(id=%d) has no mesh!", meshId);
         return 0.0;
     }
 
-    // (2) crop된(업데이트된) 메쉬 가져오기
+    // (2) crop된 최신 메쉬 확보
     rtabmap::Mesh mesh = drawable->getMesh();
-    if(mesh.polygons.empty())
-    {
-        UWARN("calculateMeshVolumeByPolygon() -> mesh has no polygons (id=%d).", meshId);
+    if (mesh.polygons.empty() || !mesh.cloud || mesh.cloud->empty()) {
+        UWARN("calculateMeshVolume() -> empty mesh/polygons (id=%d)", meshId);
         return 0.0;
     }
 
-    // (3) Scene 좌표계로 변환
-    //     - drawable 자체 pose * mesh.pose
+    // (3) 메쉬→Scene 좌표계 변환
     rtabmap::Transform meshToScene = rtabmap::Transform::getIdentity();
-    if(!drawable->getPose().isNull() && !mesh.pose.isNull())
-    {
+    if (!drawable->getPose().isNull() && !mesh.pose.isNull())
         meshToScene = drawable->getPose() * mesh.pose;
-    }
-    else if(!mesh.pose.isNull())
-    {
+    else if (!mesh.pose.isNull())
         meshToScene = mesh.pose;
-    }
-    Eigen::Affine3f meshToSceneEigen = meshToScene.toEigen3f();
 
-    // (4) 메쉬 정점을 Scene 좌표로 변환
-    std::vector<pcl::PointXYZ> sceneVertices;
-    sceneVertices.reserve(mesh.cloud->size());
+    const Eigen::Affine3f T = meshToScene.toEigen3f();
 
-    for(size_t i=0; i<mesh.cloud->size(); ++i)
-    {
-        const pcl::PointXYZRGB & ptLocal = mesh.cloud->at(i);
-
-        // PointXYZRGB로 먼저 변환
-        pcl::PointXYZRGB ptColored = pcl::transformPoint(ptLocal, meshToSceneEigen);
-
-        // x,y,z만 사용
-        pcl::PointXYZ ptScene;
-        ptScene.x = ptColored.x;
-        ptScene.y = ptColored.y;
-        ptScene.z = ptColored.z;
-        
-        sceneVertices.push_back(ptScene);
+    // (4) 모든 정점 Scene 좌표로 변환 (y=수직축)
+    std::vector<pcl::PointXYZ> V;
+    V.reserve(mesh.cloud->size());
+    for (size_t i = 0; i < mesh.cloud->size(); ++i) {
+        const pcl::PointXYZRGB &pL = mesh.cloud->at(i);
+        Eigen::Vector3f s = T * Eigen::Vector3f(pL.x, pL.y, pL.z);
+        V.emplace_back(pcl::PointXYZ{s.x(), s.y(), s.z()});
     }
 
-    // (5) 폴리곤(마커) 중심점(Scene 좌표계) 구하기
-    pcl::PointXYZ polyCentroid = computeMarkerPolygonCentroid();
+    // (5) 폴리곤 마커 → 지면 평면 추정
+    GroundPlane G = fitGroundPlaneFromMarkers(markerPoses_);
+    if (!G.valid) {
+        UWARN("calculateMeshVolume() -> invalid ground plane; volume=0");
+        return 0.0;
+    }
 
-    // (6) 모든 삼각형에 대해, polyCentroid를 기준점 c로 하는 테트라볼륨 누적
-    for(const auto & polygon : mesh.polygons)
-    {
-        if(polygon.vertices.size() < 3) continue;
+    // (6) 삼각형 단위로: V += (xz-투영면적) * (정점 높이 평균)
+    double volume = 0.0;
+    for (const auto& poly : mesh.polygons) {
+        if (poly.vertices.size() < 3) continue;
 
-        for(size_t i=1; i+1<polygon.vertices.size(); ++i)
-        {
-            int i0 = polygon.vertices[0];
-            int i1 = polygon.vertices[i];
-            int i2 = polygon.vertices[i+1];
-            if( i0<0 || i1<0 || i2<0 ||
-                i0>=int(sceneVertices.size()) ||
-                i1>=int(sceneVertices.size()) ||
-                i2>=int(sceneVertices.size()) )
-            {
-                continue;
-            }
+        for (size_t k = 2; k < poly.vertices.size(); ++k) {
+            const int i0 = poly.vertices[0];
+            const int i1 = poly.vertices[k-1];
+            const int i2 = poly.vertices[k];
+            if (i0 < 0 || i1 < 0 || i2 < 0) continue;
+            if (i0 >= (int)V.size() || i1 >= (int)V.size() || i2 >= (int)V.size()) continue;
 
-            const pcl::PointXYZ & v0 = sceneVertices[i0];
-            const pcl::PointXYZ & v1 = sceneVertices[i1];
-            const pcl::PointXYZ & v2 = sceneVertices[i2];
+            const pcl::PointXYZ &v0 = V[i0];
+            const pcl::PointXYZ &v1 = V[i1];
+            const pcl::PointXYZ &v2 = V[i2];
 
-            Eigen::Vector3f vec0(v0.x - polyCentroid.x,
-                                 v0.y - polyCentroid.y,
-                                 v0.z - polyCentroid.z);
-            Eigen::Vector3f vec1(v1.x - polyCentroid.x,
-                                 v1.y - polyCentroid.y,
-                                 v1.z - polyCentroid.z);
-            Eigen::Vector3f vec2(v2.x - polyCentroid.x,
-                                 v2.y - polyCentroid.y,
-                                 v2.z - polyCentroid.z);
+            const double Aproj = projectedAreaXZ(v0, v1, v2);
+            if (Aproj <= 1e-10) continue;
 
-            Eigen::Vector3f crossVal = vec0.cross(vec1);
-            double signedVolume = crossVal.dot(vec2) / 6.0;
-            totalVolume += std::fabs(signedVolume);
+            // 지면 대비 높이(음수는 0으로 클램프)
+            const double h0 = std::max(0.0, (double)v0.y - planeY(v0.x, v0.z, G));
+            const double h1 = std::max(0.0, (double)v1.y - planeY(v1.x, v1.z, G));
+            const double h2 = std::max(0.0, (double)v2.y - planeY(v2.x, v2.z, G));
+
+            volume += Aproj * ((h0 + h1 + h2) / 3.0);
         }
     }
+    totalVolume = volume;
     return totalVolume;
 }
 
