@@ -147,7 +147,7 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
     func setupeditcoordsButton() {
         editcoordsButton = UIButton(type: .system)
         editcoordsButton.translatesAutoresizingMaskIntoConstraints = false
-        editcoordsButton.backgroundColor = .systemGray
+        editcoordsButton.backgroundColor = .systemTeal
         editcoordsButton.setImage(UIImage(systemName: "globe"), for: .normal)
         editcoordsButton.tintColor = .white
 //        editcoordsButton.setTitleColor(.white, for: .normal)
@@ -177,7 +177,7 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
     func setupOfflineButton() {
         offlineButton = UIButton(type: .system)
         offlineButton.translatesAutoresizingMaskIntoConstraints = false
-        offlineButton.backgroundColor = .systemGray
+        offlineButton.backgroundColor = .systemTeal
         offlineButton.setTitleColor(.white, for: .normal)
         offlineButton.setTitle("Offline\nMap", for: .normal)
         offlineButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
@@ -219,7 +219,7 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
             offlineMapsTableView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             offlineMapsTableView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             offlineMapsTableView.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.8),
-            offlineMapsTableView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.5)
+            offlineMapsTableView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.4)
         ])
     }
 
@@ -522,7 +522,7 @@ class MapViewController: UIViewController, CLLocationManagerDelegate, UIGestureR
             }
             alertController.addAction(action)
         }
-
+        alertController.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
         if let popoverController = alertController.popoverPresentationController {
             popoverController.sourceView = editcoordsButton
             popoverController.sourceRect = editcoordsButton.bounds
@@ -1789,7 +1789,7 @@ class OfflineMapCell: UITableViewCell {
         statusIndicatorView.layer.cornerRadius = 7.5
         statusIndicatorView.layer.masksToBounds = false
         statusIndicatorView.layer.shadowOffset = .zero
-        statusIndicatorView.layer.shadowRadius = 5
+        statusIndicatorView.layer.shadowRadius = 3
         statusIndicatorView.layer.shadowOpacity = 1.0
         
         contentView.addSubview(thumbnailImageView)
