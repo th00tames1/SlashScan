@@ -19,10 +19,9 @@ All data are processed **locally** on the device, ensuring full data privacy and
 
 ## 🧭 Developer Information
 
-- **Developer:** Advanced Forestry Lab, Oregon State University  
-- **Principal Investigators:** Dr. Heesung Woo, Dr. Heechan Jeong  
+- **Developer:** Heechan Jeong
+- **Principal Investigators:** Dr. Heesung Woo 
 - **Affiliation:** College of Forestry, Oregon State University  
-- **Location:** Corvallis, Oregon, USA  
 
 If you have questions or encounter any technical issues, please contact our support team via email below.
 
@@ -51,26 +50,7 @@ All 3D scans, meshes, and measurements remain **on the user’s device** until m
 The app does not use analytics, ads, or tracking services.
 
 You can review the full privacy statement here:  
-➡️ [Privacy Policy](https://github.com/h0tqames/SlashScan/blob/main/PrivacyPolicy.md)
-
----
-
-## 🧩 Acknowledgements
-
-SlashScan utilizes the following open-source frameworks and technologies:
-- **Apple ARKit & LiDAR SDKs** for real-time 3D scanning  
-- **RTAB-Map** for SLAM-based spatial reconstruction  
-- **Poisson Surface Reconstruction** for mesh generation  
-- **Open3D** for point cloud processing  
-
-Developed as part of the **Sustainable Forest Management Program** at OSU College of Forestry.
-
----
-
-## 🌐 Additional Resources
-
-- [Oregon State University – Advanced Forestry Lab](https://forestry.oregonstate.edu/)
-- [OSU College of Forestry](https://www.forestry.oregonstate.edu/)
+➡️ [Privacy Policy](https://github.com/th00tames1/SlashScan/blob/main/Privacy.md)
 
 ---
 
