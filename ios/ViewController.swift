@@ -3215,44 +3215,57 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     }
     
     @IBAction func editsaveButtonTapped(_ sender: UIButton) {
-        // Volume Calculation
-        self.showToast(message: "The volume has been calculated.", seconds: 4)
-        var showvolume = round(100 * rtabmap!.calculateMeshVolume()) / 100
-        if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
-            self.titleContent.text = "Volume : \(showvolume) m³"
-        } else {
-            showvolume = round(100 * rtabmap!.calculateMeshVolume() * 35.3147) / 100
-            self.titleContent.text = "Volume : \(showvolume) ft³"
-        }
-        
-        // 계산된 볼륨을 트럭 단위에 맞게 변환
-        var volumeForTruck: Double = showvolume
-        let truckUnit = UserDefaults.standard.integer(forKey: "TruckUnit")
-        if truckUnit == 1 {
-            if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
-                // Metric: m³ → cubic yard (1 m³ = 1.30795 yd³)
-                volumeForTruck = showvolume * 1.30795
-            } else {
-                // Imperial: ft³ → cubic yard (1 yd³ = 27 ft³)
-                volumeForTruck = showvolume / 27.0
-            }
-        }
+        // 0) 원본: m³ (계산/저장/파생계산은 모두 이 값을 기준으로)
+        let rawVolM3 = rtabmap!.calculateMeshVolume()
+        // 표시용만 반올림
+        let baseM3 = (rawVolM3 * 100).rounded() / 100
+
+        // 1) 화면 표시 (설정 단위에 맞게)
+        let isMetric = (UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0)
+        let displayVol = isMetric
+            ? baseM3
+            : ((baseM3 * 35.3147 * 100).rounded() / 100)  // m³ → ft³
+        self.titleContent.text = "Volume : \(displayVol) " + (isMetric ? "m³" : "ft³")
+
+        // 2) 트럭 수 계산: 항상 m³ 기준으로 변환 후 truckSize와 같은 단위로 비교
+        let truckUnit = UserDefaults.standard.integer(forKey: "TruckUnit") // 0:m³, 1:yd³, 2:ft³ (예시)
         let truckSize = UserDefaults.standard.double(forKey: "TruckSize")
+        // m³ → (트럭 단위)로 변환
+        let volumeForTruck: Double = {
+            switch truckUnit {
+            case 0: // m³
+                return baseM3
+            case 1: // yd³
+                return baseM3 * 1.30795   // 1 m³ = 1.30795 yd³
+            case 2: // ft³
+                return baseM3 * 35.3147   // 1 m³ = 35.3147 ft³
+            default:
+                return baseM3
+            }
+        }()
+
         var numTrucks = 0
         if truckSize > 0 {
             numTrucks = Int(ceil(volumeForTruck / truckSize))
         }
         self.TruckLabel.setTitle(" \(numTrucks)", for: .normal)
-        
+
+        // 3) 표시/플래그
         hasVolume = true
         titleContent.isHidden = false
         TruckLabel.isHidden = !UserDefaults.standard.bool(forKey: "TruckView")
 
+        // 4) CSV 저장: 항상 m³로 저장(표시 단위와 무관)
         if let databasePath = self.openedDatabasePath {
             let csvFileName = (databasePath.lastPathComponent as NSString).deletingPathExtension + ".csv"
             let name = (databasePath.lastPathComponent as NSString).deletingPathExtension
-            self.updateVolumeInCSV(fileName: csvFileName, name: name, volume: showvolume)
+            // 저장은 가급적 원본 정밀도 유지(필요시 소수 3자리 등)
+            let saveM3 = (rawVolM3 * 1000).rounded() / 1000
+            self.updateVolumeInCSV(fileName: csvFileName, name: name, volume: saveM3)
         }
+
+        // 5) 안내
+        self.showToast(message: "The volume has been calculated.", seconds: 4)
     }
 
     @IBAction func manualButtonTapped(_ sender: UIButton) {
