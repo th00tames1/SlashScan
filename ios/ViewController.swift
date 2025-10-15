@@ -2670,8 +2670,8 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         // 필요한 경우 최소/최대 소수점 자릿수도 설정
-        // formatter.maximumFractionDigits = 2
-        // formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 2
+        formatter.minimumFractionDigits = 2
         return formatter.string(for: volume) ?? "\(volume)"
     }
     
@@ -2740,15 +2740,15 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                                 self.titleContent.text = "Volume : \(volumeStr) ft³"
                             }
                             // 트럭 개수 계산
-                            var volumeForTruck: Double = volume
-                            let truckUnit = UserDefaults.standard.integer(forKey: "TruckUnit")
-                            if truckUnit == 1 {
-                                if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
-                                    volumeForTruck = volume * 1.30795
-                                } else {
-                                    volumeForTruck = volume / 27.0
+                            let truckUnit = UserDefaults.standard.integer(forKey: "TruckUnit") // 0:m³, 1:yd³, 2:ft³ 가정
+                            let volumeForTruck: Double = {
+                                switch truckUnit {
+                                case 0: return volume                 // m³
+                                case 1: return volume * 1.30795       // m³ → yd³
+                                case 2: return volume * 35.3147       // m³ → ft³
+                                default: return volume
                                 }
-                            }
+                            }()
                             let truckSize = UserDefaults.standard.double(forKey: "TruckSize")
                             var numTrucks = 0
                             if truckSize > 0 {
@@ -3120,15 +3120,15 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                             self.titleContent.text = "Volume : \(volumeStr) ft³"
                         }
                         // # of trucks calculation
-                        var volumeForTruck: Double = volume
-                        let truckUnit = UserDefaults.standard.integer(forKey: "TruckUnit")
-                        if truckUnit == 1 {
-                            if UserDefaults.standard.integer(forKey: "MeasurementUnit") == 0 {
-                                volumeForTruck = volume * 1.30795
-                            } else {
-                                volumeForTruck = volume / 27.0
+                        let truckUnit = UserDefaults.standard.integer(forKey: "TruckUnit") // 0:m³, 1:yd³, 2:ft³ 가정
+                        let volumeForTruck: Double = {
+                            switch truckUnit {
+                            case 0: return volume                 // m³
+                            case 1: return volume * 1.30795       // m³ → yd³
+                            case 2: return volume * 35.3147       // m³ → ft³
+                            default: return volume
                             }
-                        }
+                        }()
                         let truckSize = UserDefaults.standard.double(forKey: "TruckSize")
                         var numTrucks = 0
                         if truckSize > 0 {
@@ -3259,8 +3259,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         if let databasePath = self.openedDatabasePath {
             let csvFileName = (databasePath.lastPathComponent as NSString).deletingPathExtension + ".csv"
             let name = (databasePath.lastPathComponent as NSString).deletingPathExtension
-            // 저장은 가급적 원본 정밀도 유지(필요시 소수 3자리 등)
-            let saveM3 = (rawVolM3 * 1000).rounded() / 1000
+            let saveM3 = (rawVolM3 * 100).rounded() / 100
             self.updateVolumeInCSV(fileName: csvFileName, name: name, volume: saveM3)
         }
 
