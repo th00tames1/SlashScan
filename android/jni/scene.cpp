@@ -29,6 +29,7 @@
 #include <opencv2/imgproc/imgproc.hpp> // cv::pointPolygonTest()
 #include <cmath> // fabs, sqrt
 #include <numeric> // std::accumulate
+#include <algorithm>
 
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -100,8 +101,25 @@ double totalVolume = 0.0;
 
 
 namespace {
+enum VolumeMethod {
+    kVolumeMethodMarkerGroundPlane = 0,
+    kVolumeMethodThreePointPlane = 1,
+    kVolumeMethodAutoGroundRemoval = 2
+};
+
+enum VolumeVisualizationMode {
+    kVolumeVisualizationMeasuredOnly = 0,
+    kVolumeVisualizationMeasuredColored = 1
+};
+
 struct GroundPlane {
     double a{0.0}, b{0.0}, c{0.0};
+    bool valid{false};
+};
+
+struct PlaneBy3Points {
+    Eigen::Vector3d normal{0.0, 1.0, 0.0};
+    Eigen::Vector3d anchor{0.0, 0.0, 0.0};
     bool valid{false};
 };
 
@@ -151,6 +169,390 @@ inline GroundPlane fitGroundPlaneFromMarkers(const std::vector<rtabmap::Transfor
     P.a = sol(0); P.b = sol(1); P.c = sol(2); P.valid = true;
     return P;
 }
+
+inline PlaneBy3Points planeFromFirst3Markers(const std::vector<rtabmap::Transform> & markerPoses)
+{
+    PlaneBy3Points P;
+    if(markerPoses.size() < 3)
+    {
+        return P;
+    }
+
+    const Eigen::Vector3d p0(markerPoses[0].x(), markerPoses[0].y(), markerPoses[0].z());
+    const Eigen::Vector3d p1(markerPoses[1].x(), markerPoses[1].y(), markerPoses[1].z());
+    const Eigen::Vector3d p2(markerPoses[2].x(), markerPoses[2].y(), markerPoses[2].z());
+
+    Eigen::Vector3d n = (p1 - p0).cross(p2 - p0);
+    const double norm = n.norm();
+    if(norm < 1e-9)
+    {
+        return P;
+    }
+
+    n /= norm;
+    if(n.y() < 0.0)
+    {
+        n = -n;
+    }
+
+    P.normal = n;
+    P.anchor = p0;
+    P.valid = true;
+    return P;
+}
+
+inline double signedDistanceToPlane(const Eigen::Vector3d & p, const PlaneBy3Points & plane)
+{
+    return plane.normal.dot(p - plane.anchor);
+}
+
+inline Eigen::Vector3d intersectPlaneSegment(
+    const Eigen::Vector3d & a,
+    const Eigen::Vector3d & b,
+    double da,
+    double db)
+{
+    const double denom = da - db;
+    if(std::fabs(denom) < 1e-12)
+    {
+        return a;
+    }
+    const double t = da / denom;
+    return a + t * (b - a);
+}
+
+inline std::vector<Eigen::Vector3d> clipPolygonAbovePlane(
+    const std::vector<Eigen::Vector3d> & polygon,
+    const PlaneBy3Points & plane)
+{
+    std::vector<Eigen::Vector3d> output;
+    if(polygon.empty())
+    {
+        return output;
+    }
+
+    output.reserve(polygon.size() + 1);
+    const double eps = 1e-9;
+    for(size_t i=0; i<polygon.size(); ++i)
+    {
+        const Eigen::Vector3d & curr = polygon[i];
+        const Eigen::Vector3d & next = polygon[(i + 1) % polygon.size()];
+        const double dc = signedDistanceToPlane(curr, plane);
+        const double dn = signedDistanceToPlane(next, plane);
+
+        const bool currIn = dc >= -eps;
+        const bool nextIn = dn >= -eps;
+
+        if(currIn && nextIn)
+        {
+            output.push_back(next);
+        }
+        else if(currIn && !nextIn)
+        {
+            output.push_back(intersectPlaneSegment(curr, next, dc, dn));
+        }
+        else if(!currIn && nextIn)
+        {
+            output.push_back(intersectPlaneSegment(curr, next, dc, dn));
+            output.push_back(next);
+        }
+    }
+    return output;
+}
+
+inline PlaneBy3Points planeFromGroundPlane(const GroundPlane & G)
+{
+    PlaneBy3Points P;
+    if(!G.valid)
+    {
+        return P;
+    }
+
+    Eigen::Vector3d n(-G.a, 1.0, -G.b);
+    const double norm = n.norm();
+    if(norm < 1e-9)
+    {
+        return P;
+    }
+    n /= norm;
+    if(n.y() < 0.0)
+    {
+        n = -n;
+    }
+
+    P.normal = n;
+    P.anchor = Eigen::Vector3d(0.0, G.c, 0.0);
+    P.valid = true;
+    return P;
+}
+
+inline GroundPlane fitGroundPlaneFromMeshPoints(const std::vector<pcl::PointXYZ> & points)
+{
+    GroundPlane P;
+    if(points.size() < 3)
+    {
+        return P;
+    }
+
+    std::vector<double> ys;
+    ys.reserve(points.size());
+    for(const auto & p : points)
+    {
+        ys.push_back(p.y);
+    }
+
+    const size_t keep = std::max<size_t>(3, ys.size() / 5);
+    std::nth_element(ys.begin(), ys.begin() + (keep - 1), ys.end());
+    const double yThreshold = ys[keep - 1];
+
+    std::vector<Eigen::Vector3d> candidates;
+    candidates.reserve(keep * 2);
+    for(const auto & p : points)
+    {
+        if(p.y <= yThreshold)
+        {
+            candidates.emplace_back(p.x, p.y, p.z);
+        }
+    }
+
+    if(candidates.size() < 3)
+    {
+        return P;
+    }
+
+    auto fitFrom = [](const std::vector<Eigen::Vector3d> & src) -> GroundPlane
+    {
+        GroundPlane out;
+        const int N = static_cast<int>(src.size());
+        if(N < 3)
+        {
+            return out;
+        }
+
+        Eigen::MatrixXd A(N, 3);
+        Eigen::VectorXd y(N);
+        for(int i=0; i<N; ++i)
+        {
+            A(i,0) = src[i].x();
+            A(i,1) = src[i].z();
+            A(i,2) = 1.0;
+            y(i) = src[i].y();
+        }
+
+        const Eigen::Matrix3d ATA = A.transpose() * A;
+        if(std::fabs(ATA.determinant()) < 1e-12)
+        {
+            out.a = 0.0;
+            out.b = 0.0;
+            out.c = y.mean();
+            out.valid = true;
+            return out;
+        }
+
+        const Eigen::Vector3d sol = ATA.ldlt().solve(A.transpose() * y);
+        out.a = sol(0);
+        out.b = sol(1);
+        out.c = sol(2);
+        out.valid = true;
+        return out;
+    };
+
+    GroundPlane rough = fitFrom(candidates);
+    if(!rough.valid)
+    {
+        return rough;
+    }
+
+    std::vector<double> residuals;
+    residuals.reserve(candidates.size());
+    for(const auto & p : candidates)
+    {
+        residuals.push_back(std::fabs(p.y() - (rough.a * p.x() + rough.b * p.z() + rough.c)));
+    }
+    std::nth_element(residuals.begin(), residuals.begin() + residuals.size()/2, residuals.end());
+    const double medianResidual = residuals[residuals.size()/2];
+    const double inlierThreshold = std::max(0.02, medianResidual * 2.5);
+
+    std::vector<Eigen::Vector3d> inliers;
+    inliers.reserve(candidates.size());
+    for(const auto & p : candidates)
+    {
+        const double r = std::fabs(p.y() - (rough.a * p.x() + rough.b * p.z() + rough.c));
+        if(r <= inlierThreshold)
+        {
+            inliers.push_back(p);
+        }
+    }
+
+    if(inliers.size() < 3)
+    {
+        return rough;
+    }
+    return fitFrom(inliers);
+}
+
+inline double computeVolumeAbovePlane(
+    const std::vector<pcl::PointXYZ> & vertices,
+    const std::vector<pcl::Vertices> & polygons,
+    const PlaneBy3Points & plane,
+    double minHeight)
+{
+    if(!plane.valid)
+    {
+        return 0.0;
+    }
+
+    double volume = 0.0;
+    for(const auto & poly : polygons)
+    {
+        if(poly.vertices.size() < 3)
+        {
+            continue;
+        }
+
+        for(size_t k = 2; k < poly.vertices.size(); ++k)
+        {
+            const int i0 = poly.vertices[0];
+            const int i1 = poly.vertices[k-1];
+            const int i2 = poly.vertices[k];
+            if(i0 < 0 || i1 < 0 || i2 < 0)
+            {
+                continue;
+            }
+            if(i0 >= (int)vertices.size() || i1 >= (int)vertices.size() || i2 >= (int)vertices.size())
+            {
+                continue;
+            }
+
+            std::vector<Eigen::Vector3d> tri;
+            tri.reserve(3);
+            tri.emplace_back(vertices[i0].x, vertices[i0].y, vertices[i0].z);
+            tri.emplace_back(vertices[i1].x, vertices[i1].y, vertices[i1].z);
+            tri.emplace_back(vertices[i2].x, vertices[i2].y, vertices[i2].z);
+
+            std::vector<Eigen::Vector3d> clipped = clipPolygonAbovePlane(tri, plane);
+            if(clipped.size() < 3)
+            {
+                continue;
+            }
+
+            for(size_t t = 2; t < clipped.size(); ++t)
+            {
+                const Eigen::Vector3d & c0 = clipped[0];
+                const Eigen::Vector3d & c1 = clipped[t-1];
+                const Eigen::Vector3d & c2 = clipped[t];
+
+                const double areaOnPlane = 0.5 * std::fabs((c1 - c0).cross(c2 - c0).dot(plane.normal));
+                if(areaOnPlane <= 1e-12)
+                {
+                    continue;
+                }
+
+                const double h0 = std::max(0.0, signedDistanceToPlane(c0, plane) - minHeight);
+                const double h1 = std::max(0.0, signedDistanceToPlane(c1, plane) - minHeight);
+                const double h2 = std::max(0.0, signedDistanceToPlane(c2, plane) - minHeight);
+                if(h0 <= 0.0 && h1 <= 0.0 && h2 <= 0.0)
+                {
+                    continue;
+                }
+
+                volume += areaOnPlane * ((h0 + h1 + h2) / 3.0);
+            }
+        }
+    }
+    return volume;
+}
+
+inline std::vector<pcl::Vertices> selectPolygonsAbovePlane(
+    const std::vector<pcl::PointXYZ> & vertices,
+    const std::vector<pcl::Vertices> & polygons,
+    const PlaneBy3Points & plane,
+    double minHeight)
+{
+    std::vector<pcl::Vertices> filtered;
+    filtered.reserve(polygons.size());
+    if(!plane.valid)
+    {
+        return filtered;
+    }
+
+    for(const auto & poly : polygons)
+    {
+        if(poly.vertices.size() < 3)
+        {
+            continue;
+        }
+
+        double sumH = 0.0;
+        double maxH = 0.0;
+        int validCount = 0;
+        for(unsigned int i = 0; i < poly.vertices.size(); ++i)
+        {
+            const int idx = poly.vertices[i];
+            if(idx < 0 || idx >= (int)vertices.size())
+            {
+                continue;
+            }
+            const Eigen::Vector3d p(vertices[idx].x, vertices[idx].y, vertices[idx].z);
+            const double h = std::max(0.0, signedDistanceToPlane(p, plane));
+            sumH += h;
+            if(h > maxH)
+            {
+                maxH = h;
+            }
+            ++validCount;
+        }
+
+        if(validCount == 0)
+        {
+            continue;
+        }
+
+        const double meanH = sumH / double(validCount);
+        if(maxH > minHeight && meanH > minHeight * 0.35)
+        {
+            filtered.push_back(poly);
+        }
+    }
+    return filtered;
+}
+
+inline void tintPolygons(
+    rtabmap::Mesh & mesh,
+    const std::vector<pcl::Vertices> & polygons,
+    unsigned char r,
+    unsigned char g,
+    unsigned char b)
+{
+    if(!mesh.cloud || mesh.cloud->empty())
+    {
+        return;
+    }
+
+    std::vector<char> used(mesh.cloud->size(), 0);
+    for(const auto & poly : polygons)
+    {
+        for(unsigned int i=0; i<poly.vertices.size(); ++i)
+        {
+            const int idx = poly.vertices[i];
+            if(idx >= 0 && idx < (int)used.size())
+            {
+                used[idx] = 1;
+            }
+        }
+    }
+
+    for(size_t i=0; i<used.size(); ++i)
+    {
+        if(used[i])
+        {
+            pcl::PointXYZRGB & p = mesh.cloud->at(i);
+            p.r = r;
+            p.g = g;
+            p.b = b;
+        }
+    }
+}
 } // namespace
 
 Scene::Scene() :
@@ -187,6 +589,9 @@ Scene::Scene() :
         screenHeight_(0),
         doubleTapOn_(false),
         croppingOn_(false),
+        volumeMethod_(kVolumeMethodMarkerGroundPlane),
+        volumeVisualizationMode_(kVolumeVisualizationMeasuredOnly),
+        autoGroundThreshold_(0.0f),
         lineWidth_(12.0f),
         polygonClosed_(false)
 {
@@ -702,9 +1107,10 @@ int Scene::Render(const float * uvsTransformed, glm::mat4 arViewMatrix, glm::mat
                 // 2) 필터링
                 filterMeshInsidePolygon(polygon2D, mesh, cloudDrawable->getPose());
                 // 3) 업데이트
+                volumePreviewSourceMeshes_.erase(kv.first);
                 cloudDrawable->updateMesh(mesh);
                 // 4) 볼륨 계산
-                totalVolume = calculateMeshVolume(kv.first);
+                totalVolume = calculateMeshVolume(kv.first, volumeMethod_);
             }
         }
     }
@@ -900,8 +1306,10 @@ if (!g_useSphereMarkers) {
             glDrawArrays(GL_LINES, i, 2);
         }
 
-        // polygonClosed_ == true면 "마지막 -> 첫 번째"도 연결
-        if(polygonClosed_ && markerPoses_.size() >= 3)
+        const bool closeLoopForDisplay =
+            (polygonClosed_ && markerPoses_.size() >= 3) ||
+            (!polygonClosed_ && volumeMethod_ == kVolumeMethodThreePointPlane && markerPoses_.size() == 3);
+        if(closeLoopForDisplay)
         {
             glDrawArrays(GL_LINES, 0, 1);
 
@@ -993,7 +1401,7 @@ void Scene::OnTouchEvent(int touch_count,
             
             //Cropping
             if(event == 7) {
-                croppingOn_ = true;
+                croppingOn_ = volumeMethod_ != kVolumeMethodAutoGroundRemoval;
             }
             else{
                 croppingOn_ = false;
@@ -1129,16 +1537,22 @@ void Scene::removeMarkerAll()
 {
     LOGI("Removing all markers...");
 
-    // [추가] 먼저, 필터링된 메쉬를 '원본'으로 복원
     for(auto & kv : originalMeshes_)
     {
         int id = kv.first;
-        // Scene 내부에 해당 메쉬가 존재한다면
         auto iter = pointClouds_.find(id);
-        if(iter != pointClouds_.end() && iter->second->hasMesh())
+        if(iter == pointClouds_.end() || !iter->second->hasMesh())
         {
-//            setWireframe(true);
-            // 원본 메쉬로 업데이트
+            continue;
+        }
+
+        auto previewIter = volumePreviewSourceMeshes_.find(id);
+        if(previewIter != volumePreviewSourceMeshes_.end())
+        {
+            iter->second->updateMesh(previewIter->second, true);
+        }
+        else
+        {
             iter->second->updateMesh(kv.second, true);
         }
     }
@@ -1152,6 +1566,7 @@ void Scene::removeMarkerAll()
     }
     markerOrder_.clear();
     markerPoses_.clear();
+    volumePreviewSourceMeshes_.clear();
 
     // 폴리곤도 닫힘 상태 해제
     polygonClosed_ = false;
@@ -1198,6 +1613,7 @@ void Scene::addMesh(
     }
     //기존 메쉬 보관
     originalMeshes_[id] = mesh;
+    volumePreviewSourceMeshes_.erase(id);
 
     PointCloudDrawable * drawable = new PointCloudDrawable(mesh, createWireframe);
     drawable->setPose(pose);
@@ -1310,6 +1726,7 @@ void Scene::updateMesh(int id, const rtabmap::Mesh & mesh)
     if(iter != pointClouds_.end())
     {
         originalMeshes_[id] = mesh;
+        volumePreviewSourceMeshes_.erase(id);
         
         iter->second->updateMesh(mesh);
     }
@@ -1330,6 +1747,74 @@ void Scene::setGridColor(float r, float g, float b)
     {
         grid_->SetColor(r, g, b);
     }
+}
+
+void Scene::setVolumeMethod(int method)
+{
+    int m = method;
+    if(m < kVolumeMethodMarkerGroundPlane || m > kVolumeMethodAutoGroundRemoval)
+    {
+        m = kVolumeMethodMarkerGroundPlane;
+    }
+    volumeMethod_ = m;
+    if(volumeMethod_ == kVolumeMethodMarkerGroundPlane && !volumePreviewSourceMeshes_.empty())
+    {
+        for(auto & kv : volumePreviewSourceMeshes_)
+        {
+            auto iter = pointClouds_.find(kv.first);
+            if(iter != pointClouds_.end() && iter->second->hasMesh())
+            {
+                iter->second->updateMesh(kv.second, true);
+            }
+        }
+        volumePreviewSourceMeshes_.clear();
+    }
+    if(volumeMethod_ == kVolumeMethodAutoGroundRemoval)
+    {
+        croppingOn_ = false;
+        if(!markerPoses_.empty() || polygonClosed_)
+        {
+            removeMarkerAll();
+        }
+    }
+}
+
+void Scene::setVolumeVisualizationMode(int mode)
+{
+    if(mode < kVolumeVisualizationMeasuredOnly || mode > kVolumeVisualizationMeasuredColored)
+    {
+        volumeVisualizationMode_ = kVolumeVisualizationMeasuredOnly;
+        return;
+    }
+    volumeVisualizationMode_ = mode;
+}
+
+void Scene::setAutoGroundThreshold(float threshold)
+{
+    if(threshold <= 0.0f)
+    {
+        autoGroundThreshold_ = 0.0f;
+        return;
+    }
+    autoGroundThreshold_ = std::min(0.30f, std::max(0.005f, threshold));
+}
+
+void Scene::clearVolumePreview()
+{
+    if(volumePreviewSourceMeshes_.empty())
+    {
+        return;
+    }
+
+    for(auto & kv : volumePreviewSourceMeshes_)
+    {
+        auto iter = pointClouds_.find(kv.first);
+        if(iter != pointClouds_.end() && iter->second->hasMesh())
+        {
+            iter->second->updateMesh(kv.second, true);
+        }
+    }
+    volumePreviewSourceMeshes_.clear();
 }
 
 void Scene::filterMeshInsidePolygon(
@@ -1409,7 +1894,7 @@ void Scene::filterMeshInsidePolygon(
     mesh.polygons = newPolygons;
 }
 
-double Scene::calculateMeshVolume(int meshId)
+double Scene::calculateMeshVolume(int meshId, int method)
 {
     totalVolume = 0.0;
 
@@ -1432,6 +1917,25 @@ double Scene::calculateMeshVolume(int meshId)
         return 0.0;
     }
 
+    int selectedMethod = method;
+    if(selectedMethod < kVolumeMethodMarkerGroundPlane || selectedMethod > kVolumeMethodAutoGroundRemoval)
+    {
+        selectedMethod = volumeMethod_;
+    }
+
+    if(selectedMethod != kVolumeMethodMarkerGroundPlane)
+    {
+        auto previewIter = volumePreviewSourceMeshes_.find(meshId);
+        if(previewIter == volumePreviewSourceMeshes_.end())
+        {
+            volumePreviewSourceMeshes_.insert(std::make_pair(meshId, mesh));
+        }
+        else
+        {
+            mesh = previewIter->second;
+        }
+    }
+
     // (3) 메쉬→Scene 좌표계 변환
     rtabmap::Transform meshToScene = rtabmap::Transform::getIdentity();
     if (!drawable->getPose().isNull() && !mesh.pose.isNull())
@@ -1450,7 +1954,76 @@ double Scene::calculateMeshVolume(int meshId)
         V.emplace_back(pcl::PointXYZ{s.x(), s.y(), s.z()});
     }
 
-    // (5) 폴리곤 마커 → 지면 평면 추정
+    if(selectedMethod == kVolumeMethodThreePointPlane)
+    {
+        if(markerPoses_.size() < 3 || polygonClosed_)
+        {
+            UWARN("calculateMeshVolume() -> three-point mode requires 3 open markers");
+            return 0.0;
+        }
+        const PlaneBy3Points P3 = planeFromFirst3Markers(markerPoses_);
+        if(!P3.valid)
+        {
+            UWARN("calculateMeshVolume() -> invalid 3-point plane; volume=0");
+            return 0.0;
+        }
+
+        const double displayThreshold = 0.005;
+        totalVolume = computeVolumeAbovePlane(V, mesh.polygons, P3, displayThreshold);
+        rtabmap::Mesh displayMesh = mesh;
+        displayMesh.polygons = selectPolygonsAbovePlane(V, mesh.polygons, P3, displayThreshold);
+        if(volumeVisualizationMode_ == kVolumeVisualizationMeasuredColored)
+        {
+            tintPolygons(displayMesh, displayMesh.polygons, 139, 94, 60);
+        }
+        drawable->updateMesh(displayMesh);
+        return totalVolume;
+    }
+
+    if(selectedMethod == kVolumeMethodAutoGroundRemoval)
+    {
+        const GroundPlane Gauto = fitGroundPlaneFromMeshPoints(V);
+        if(!Gauto.valid)
+        {
+            UWARN("calculateMeshVolume() -> auto-ground fit failed; volume=0");
+            return 0.0;
+        }
+        const PlaneBy3Points Pauto = planeFromGroundPlane(Gauto);
+        if(!Pauto.valid)
+        {
+            UWARN("calculateMeshVolume() -> auto-ground plane invalid; volume=0");
+            return 0.0;
+        }
+
+        double maxHeight = 0.0;
+        for(const auto & v : V)
+        {
+            const Eigen::Vector3d p(v.x, v.y, v.z);
+            const double h = std::max(0.0, signedDistanceToPlane(p, Pauto));
+            if(h > maxHeight)
+            {
+                maxHeight = h;
+            }
+        }
+
+        if(maxHeight <= 1e-9)
+        {
+            return 0.0;
+        }
+
+        const double adaptiveHeight = std::max(0.02, std::min(0.08, maxHeight * 0.03));
+        const double minHeight = autoGroundThreshold_ > 0.0f ? (double)autoGroundThreshold_ : adaptiveHeight;
+        totalVolume = computeVolumeAbovePlane(V, mesh.polygons, Pauto, minHeight);
+        rtabmap::Mesh displayMesh = mesh;
+        displayMesh.polygons = selectPolygonsAbovePlane(V, mesh.polygons, Pauto, minHeight);
+        if(volumeVisualizationMode_ == kVolumeVisualizationMeasuredColored)
+        {
+            tintPolygons(displayMesh, displayMesh.polygons, 70, 130, 180);
+        }
+        drawable->updateMesh(displayMesh);
+        return totalVolume;
+    }
+
     GroundPlane G = fitGroundPlaneFromMarkers(markerPoses_);
     if (!G.valid) {
         UWARN("calculateMeshVolume() -> invalid ground plane; volume=0");

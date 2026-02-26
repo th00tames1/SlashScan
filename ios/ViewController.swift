@@ -151,6 +151,53 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     
     @objc func defaultsChanged(){
         updateDisplayFromDefaults()
+        applyVolumeMethodUI()
+    }
+
+    private func currentVolumeMethod() -> Int {
+        let method = UserDefaults.standard.integer(forKey: "VolumeMethod")
+        if method < 0 || method > 2 {
+            return 0
+        }
+        return method
+    }
+
+    private func currentVolumeVisualizationMode() -> Int {
+        let mode = UserDefaults.standard.integer(forKey: "VolumeVisualizationMode")
+        if mode < 0 || mode > 1 {
+            return 0
+        }
+        return mode
+    }
+
+    private func currentAutoGroundThreshold() -> Float {
+        let raw = UserDefaults.standard.double(forKey: "AutoGroundThreshold")
+        if raw <= 0 {
+            return 0
+        }
+        let clamped = min(max(raw, 0.005), 0.30)
+        return Float(clamped)
+    }
+
+    private func applyVolumeMethodUI() {
+        let method = currentVolumeMethod()
+        rtabmap?.setVolumeMethod(method: method)
+        rtabmap?.setVolumeVisualizationMode(mode: currentVolumeVisualizationMode())
+        rtabmap?.setAutoGroundThreshold(threshold: currentAutoGroundThreshold())
+        if mState != .STATE_EDIT {
+            rtabmap?.clearVolumePreview()
+        }
+
+        let autoGroundMode = method == 2
+        cropButton.isEnabled = !autoGroundMode
+        cropButton.alpha = autoGroundMode ? 0.45 : 1.0
+
+        if autoGroundMode && isCropping {
+            isCropping = false
+            editsaveButton.isEnabled = true
+            editButton.isHidden = false
+            cropButton.tintColor = .white
+        }
     }
     
     func showToast(message: String, seconds: Double) {
@@ -277,6 +324,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         
         registerSettingsBundle()
         updateDisplayFromDefaults()
+        applyVolumeMethodUI()
         
         maxPolygonsPickerView = UIPickerView(frame: CGRect(x: 10, y: 50, width: 250, height: 150))
         maxPolygonsPickerView.delegate = self
@@ -1368,8 +1416,21 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                 }
             })
         ])
+        let volumeVisualizationMenu = UIMenu(title: "Volume Visualization", options: .displayInline, children: [
+            UIAction(title: "Measured Mesh Only", image: self.currentVolumeVisualizationMode() == 0 ? UIImage(systemName: "checkmark.circle") : UIImage(systemName: "circle"), handler: { _ in
+                UserDefaults.standard.set(0, forKey: "VolumeVisualizationMode")
+                self.applyVolumeMethodUI()
+                self.TouchAction(true)
+            }),
+            UIAction(title: "Measured Mesh Colored", image: self.currentVolumeVisualizationMode() == 1 ? UIImage(systemName: "checkmark.circle") : UIImage(systemName: "circle"), handler: { _ in
+                UserDefaults.standard.set(1, forKey: "VolumeVisualizationMode")
+                self.applyVolumeMethodUI()
+                self.TouchAction(true)
+            })
+        ])
         var viewMenuChildren: [UIMenuElement] = []
         viewMenuChildren.append(cameraMenu)
+        viewMenuChildren.append(volumeVisualizationMenu)
         viewButton.menu = UIMenu(title: "", children: viewMenuChildren)
         viewButton.addTarget(self, action: #selector(ViewController.menuOpened(_:)), for: .menuActionTriggered)
     }
@@ -3096,6 +3157,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             self.updateState(state: .STATE_VISUALIZING)
             self.rtabmap!.setWireframe(enabled: false)
             self.closeVisualization()
+            rtabmap?.clearVolumePreview()
             rtabmap?.removePoint()
             rtabmap?.setGridVisible(visible: UserDefaults.standard.bool(forKey: "GridView"))
             if self.isPaused {
@@ -3159,11 +3221,13 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         else {
             self.showToast(message: "Measurement Mode ON", seconds: 3)
             editButton.tintColor = .systemRed
+            rtabmap?.setVolumeMethod(method: currentVolumeMethod())
             self.updateState(state: .STATE_EDIT)
             self.rtabmap!.setWireframe(enabled: true)
             rtabmap?.setGridVisible(visible: false)
             titleContent.isHidden = true
             TruckLabel.isHidden = true
+            applyVolumeMethodUI()
         }
     }
 
@@ -3192,6 +3256,17 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     }
     
     @IBAction func cropButtonTapped(_ sender: UIButton) {
+        let method = currentVolumeMethod()
+        rtabmap?.setVolumeMethod(method: method)
+        if method == 2 {
+            isCropping = false
+            editsaveButton.isEnabled = true
+            editButton.isHidden = false
+            cropButton.tintColor = .white
+            self.showToast(message: "Cropping is disabled in Auto Ground Removal.", seconds: 3)
+            return
+        }
+
         isCropping.toggle()
         editsaveButton.isEnabled = !isCropping
         editButton.isHidden = isCropping
@@ -3206,6 +3281,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     }
     
     @IBAction func cancelButtonTapped(_ sender: UIButton) {
+        rtabmap?.clearVolumePreview()
         rtabmap?.removePoint();
         if self.isPaused {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
@@ -3216,7 +3292,9 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     
     @IBAction func editsaveButtonTapped(_ sender: UIButton) {
         // 0) 원본: m³ (계산/저장/파생계산은 모두 이 값을 기준으로)
-        let rawVolM3 = rtabmap!.calculateMeshVolume()
+        let volumeMethod = UserDefaults.standard.integer(forKey: "VolumeMethod")
+        rtabmap?.setVolumeMethod(method: volumeMethod)
+        let rawVolM3 = rtabmap!.calculateMeshVolume(mode: volumeMethod)
         // 표시용만 반올림
         let baseM3 = (rawVolM3 * 100).rounded() / 100
 

@@ -80,7 +80,7 @@ class RTABMapApp : public UEventsHandler {
 
   int openDatabase(const std::string & databasePath, bool databaseInMemory, bool optimize, bool clearDatabase);
 
-  double calculateMeshVolume(); //헤더추가됨
+  double calculateMeshVolume(int method = 0);
     
   bool isBuiltWith(int cameraDriver) const;
 #ifdef __ANDROID__
@@ -129,6 +129,10 @@ class RTABMapApp : public UEventsHandler {
   void setLighting(bool enabled);
   void setBackfaceCulling(bool enabled);
   void setWireframe(bool enabled);
+  void setVolumeMethod(int method);
+  void setVolumeVisualizationMode(int mode);
+  void setAutoGroundThreshold(float threshold);
+  void clearVolumePreview();
   void setLocalizationMode(bool enabled);
   void setTrajectoryMode(bool enabled);
   void setGraphOptimization(bool enabled);

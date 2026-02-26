@@ -6,4 +6,8 @@
 #import <sqlite3.h>
 #import "RTABMapAppObjC.h"
 
-double calculateMeshVolumeNative(const void* object);
+double calculateMeshVolumeNative(const void* object, int method);
+void setVolumeMethodNative(const void* object, int method);
+void setVolumeVisualizationModeNative(const void* object, int mode);
+void setAutoGroundThresholdNative(const void* object, float threshold);
+void clearVolumePreviewNative(const void* object);

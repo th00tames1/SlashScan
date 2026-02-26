@@ -131,8 +131,12 @@ void releasePreviewImageNative(ImageNative image);
 void setGPSNative(const void *object, double stamp, double longitude, double latitude, double altitude, double accuracy, double bearing);
 void addEnvSensorNative(const void *object, int type, float value);
 //추가됨
-double calculateMeshVolumeNative(const void* object);
+double calculateMeshVolumeNative(const void* object, int method);
 void removePointNative(const void* object);
+void setVolumeMethodNative(const void *object, int method);
+void setVolumeVisualizationModeNative(const void *object, int mode);
+void setAutoGroundThresholdNative(const void *object, float threshold);
+void clearVolumePreviewNative(const void *object);
 
 #ifdef __cplusplus
 }

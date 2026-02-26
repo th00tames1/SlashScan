@@ -624,9 +624,9 @@ void addEnvSensorNative(const void *object, int type, float value)
 }
 
 // 추가됨
-double calculateMeshVolumeNative(const void* object) {
+double calculateMeshVolumeNative(const void* object, int method) {
     if (object) {
-        return native(object)->calculateMeshVolume();
+        return native(object)->calculateMeshVolume(method);
     } else {
         UERROR("object is null!");
         return -1.0;
@@ -637,6 +637,54 @@ void removePointNative(const void *object) {
     if(object) {
         native(object)->removePointNative();
     } else {
+        UERROR("object is null!");
+    }
+}
+
+void setVolumeMethodNative(const void *object, int method)
+{
+    if(object)
+    {
+        native(object)->setVolumeMethod(method);
+    }
+    else
+    {
+        UERROR("object is null!");
+    }
+}
+
+void setVolumeVisualizationModeNative(const void *object, int mode)
+{
+    if(object)
+    {
+        native(object)->setVolumeVisualizationMode(mode);
+    }
+    else
+    {
+        UERROR("object is null!");
+    }
+}
+
+void setAutoGroundThresholdNative(const void *object, float threshold)
+{
+    if(object)
+    {
+        native(object)->setAutoGroundThreshold(threshold);
+    }
+    else
+    {
+        UERROR("object is null!");
+    }
+}
+
+void clearVolumePreviewNative(const void *object)
+{
+    if(object)
+    {
+        native(object)->clearVolumePreview();
+    }
+    else
+    {
         UERROR("object is null!");
     }
 }

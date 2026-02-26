@@ -148,6 +148,10 @@ class Scene {
   void setWireframe(bool enabled) {wireFrame_ = enabled;}
   void setBackgroundColor(float r, float g, float b) {r_=r; g_=g; b_=b;} // 0.0f <> 1.0f
   void setGridColor(float r, float g, float b);
+  void setVolumeMethod(int method);
+  void setVolumeVisualizationMode(int mode);
+  void setAutoGroundThreshold(float threshold);
+  void clearVolumePreview();
 
   bool isBlending() const {return blending_;}
   bool isMapRendering() const {return mapRendering_;}
@@ -172,7 +176,7 @@ class Scene {
         const std::vector<rtabmap::Transform> & polygon2D,
         rtabmap::Mesh & mesh,
                                         const rtabmap::Transform & drawablePose);
-    double calculateMeshVolume(int meshId);
+    double calculateMeshVolume(int meshId, int method = 0);
     pcl::PointXYZ computeMarkerPolygonCentroid() const;
     
  private:
@@ -230,6 +234,10 @@ class Scene {
   bool doubleTapOn_;
   bool croppingOn_;
   cv::Point2f doubleTapPos_;
+  int volumeMethod_;
+  int volumeVisualizationMode_;
+  float autoGroundThreshold_;
+  std::map<int, rtabmap::Mesh> volumePreviewSourceMeshes_;
     
     std::vector<int> markerOrder_;
     std::vector<rtabmap::Transform> markerPoses_;

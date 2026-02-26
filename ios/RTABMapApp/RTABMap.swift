@@ -160,8 +160,28 @@ class RTABMap {
         return Int(postProcessingNative(native_rtabmap, Int32(approach)))
     }
     
+    func calculateMeshVolume(mode: Int) -> Double {
+        return calculateMeshVolumeNative(native_rtabmap, Int32(mode))
+    }
+
+    func setVolumeMethod(method: Int) {
+        setVolumeMethodNative(native_rtabmap, Int32(method))
+    }
+
+    func setVolumeVisualizationMode(mode: Int) {
+        setVolumeVisualizationModeNative(native_rtabmap, Int32(mode))
+    }
+
+    func setAutoGroundThreshold(threshold: Float) {
+        setAutoGroundThresholdNative(native_rtabmap, threshold)
+    }
+
+    func clearVolumePreview() {
+        clearVolumePreviewNative(native_rtabmap)
+    }
+
     func calculateMeshVolume() -> Double {
-        return calculateMeshVolumeNative(native_rtabmap)
+        return calculateMeshVolume(mode: 0)
     }
     
     func exportMesh(

@@ -535,8 +535,8 @@ void RTABMapApp::setupSwiftCallbacks(void * classPtr,
 //    return volume;
 //}
 
-double RTABMapApp::calculateMeshVolume() {
-    return main_scene_.calculateMeshVolume(-100);
+double RTABMapApp::calculateMeshVolume(int method) {
+    return main_scene_.calculateMeshVolume(-100, method);
 }
 
 RTABMapApp::~RTABMapApp() {
@@ -2562,6 +2562,22 @@ void RTABMapApp::setBackfaceCulling(bool enabled)
 void RTABMapApp::setWireframe(bool enabled)
 {
 	main_scene_.setWireframe(enabled);
+}
+void RTABMapApp::setVolumeMethod(int method)
+{
+	main_scene_.setVolumeMethod(method);
+}
+void RTABMapApp::setVolumeVisualizationMode(int mode)
+{
+	main_scene_.setVolumeVisualizationMode(mode);
+}
+void RTABMapApp::setAutoGroundThreshold(float threshold)
+{
+	main_scene_.setAutoGroundThreshold(threshold);
+}
+void RTABMapApp::clearVolumePreview()
+{
+	main_scene_.clearVolumePreview();
 }
 
 void RTABMapApp::setLocalizationMode(bool enabled)

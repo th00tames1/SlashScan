@@ -66,6 +66,82 @@
 			<key>Type</key>
 			<string>PSGroupSpecifier</string>
 			<key>Title</key>
+			<string>Volume Settings</string>
+		</dict>
+		<dict>
+			<key>DefaultValue</key>
+			<integer>0</integer>
+			<key>Key</key>
+			<string>VolumeMethod</string>
+			<key>Title</key>
+			<string>Volume Method</string>
+			<key>Titles</key>
+			<array>
+				<string>Marker Ground Plane</string>
+				<string>3-Point Plane</string>
+				<string>Auto Ground Removal</string>
+			</array>
+			<key>Type</key>
+			<string>PSMultiValueSpecifier</string>
+			<key>Values</key>
+			<array>
+				<integer>0</integer>
+				<integer>1</integer>
+				<integer>2</integer>
+			</array>
+		</dict>
+		<dict>
+			<key>DefaultValue</key>
+			<integer>0</integer>
+			<key>Key</key>
+			<string>VolumeVisualizationMode</string>
+			<key>Title</key>
+			<string>Volume Visualization</string>
+			<key>Titles</key>
+			<array>
+				<string>Measured Mesh Only</string>
+				<string>Measured Mesh Colored</string>
+			</array>
+			<key>Type</key>
+			<string>PSMultiValueSpecifier</string>
+			<key>Values</key>
+			<array>
+				<integer>0</integer>
+				<integer>1</integer>
+			</array>
+		</dict>
+		<dict>
+			<key>DefaultValue</key>
+			<real>0.0</real>
+			<key>Key</key>
+			<string>AutoGroundThreshold</string>
+			<key>Title</key>
+			<string>Auto Ground Threshold</string>
+			<key>Titles</key>
+			<array>
+				<string>Adaptive</string>
+				<string>1.5 cm</string>
+				<string>2.0 cm</string>
+				<string>3.0 cm</string>
+				<string>5.0 cm</string>
+				<string>8.0 cm</string>
+			</array>
+			<key>Type</key>
+			<string>PSMultiValueSpecifier</string>
+			<key>Values</key>
+			<array>
+				<real>0.0</real>
+				<real>0.015</real>
+				<real>0.02</real>
+				<real>0.03</real>
+				<real>0.05</real>
+				<real>0.08</real>
+			</array>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+			<key>Title</key>
 			<string>Truck Settings</string>
 		</dict>
 		<dict>
