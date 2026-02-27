@@ -256,6 +256,7 @@ class RTABMapApp : public UEventsHandler {
   bool postProcessing_;
   bool filterPolygonsOnNextRender_;
   bool Clipping_;
+  bool autoCenterCameraOnNextRender_;
   int gainCompensationOnNextRender_;
   bool bilateralFilteringOnNextRender_;
   bool takeScreenshotOnNextRender_;

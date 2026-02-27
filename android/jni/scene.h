@@ -84,6 +84,7 @@ class Scene {
   tango_gl::GestureCamera::CameraType GetCameraType() const {return gesture_camera_->GetCameraType();}
 
   void SetCameraPose(const rtabmap::Transform & pose); // opengl camera
+  bool focusOnClouds();
   rtabmap::Transform GetCameraPose() const {return currentPose_!=0?*currentPose_:rtabmap::Transform();}
   rtabmap::Transform GetOpenGLCameraPose(float * fov = 0) const;
 

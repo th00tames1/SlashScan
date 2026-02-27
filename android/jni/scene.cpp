@@ -1392,6 +1392,69 @@ void Scene::SetCameraPose(const rtabmap::Transform & pose)
     *currentPose_ = pose;
 }
 
+bool Scene::focusOnClouds()
+{
+    if(pointClouds_.empty())
+    {
+        return false;
+    }
+
+    bool valid = false;
+    pcl::PointXYZ bbMin(0.0f, 0.0f, 0.0f);
+    pcl::PointXYZ bbMax(0.0f, 0.0f, 0.0f);
+    for(std::map<int, PointCloudDrawable*>::const_iterator iter=pointClouds_.begin(); iter!=pointClouds_.end(); ++iter)
+    {
+        const PointCloudDrawable * cloud = iter->second;
+        if(!cloud || !cloud->isVisible())
+        {
+            continue;
+        }
+
+        const pcl::PointXYZ cMin = cloud->aabbMinWorld();
+        const pcl::PointXYZ cMax = cloud->aabbMaxWorld();
+        if(!std::isfinite(cMin.x) || !std::isfinite(cMin.y) || !std::isfinite(cMin.z) ||
+           !std::isfinite(cMax.x) || !std::isfinite(cMax.y) || !std::isfinite(cMax.z))
+        {
+            continue;
+        }
+
+        if(!valid)
+        {
+            bbMin = cMin;
+            bbMax = cMax;
+            valid = true;
+        }
+        else
+        {
+            bbMin.x = std::min(bbMin.x, cMin.x);
+            bbMin.y = std::min(bbMin.y, cMin.y);
+            bbMin.z = std::min(bbMin.z, cMin.z);
+            bbMax.x = std::max(bbMax.x, cMax.x);
+            bbMax.y = std::max(bbMax.y, cMax.y);
+            bbMax.z = std::max(bbMax.z, cMax.z);
+        }
+    }
+
+    if(!valid)
+    {
+        return false;
+    }
+
+    const float centerX = (bbMin.x + bbMax.x) * 0.5f;
+    const float centerY = (bbMin.y + bbMax.y) * 0.5f;
+    const float centerZ = (bbMin.z + bbMax.z) * 0.5f;
+    const float sizeX = bbMax.x - bbMin.x;
+    const float sizeY = bbMax.y - bbMin.y;
+    const float sizeZ = bbMax.z - bbMin.z;
+    const float extent = std::max(sizeX, std::max(sizeY, sizeZ));
+    const float distance = std::max(3.0f, std::min(80.0f, extent * 1.6f + 2.0f));
+
+    gesture_camera_->SetAnchorOffset(glm::vec3(0.0f));
+    gesture_camera_->SetCameraDistance(distance);
+    SetCameraPose(rtabmap::Transform(centerX, centerY, centerZ, 0, 0, -M_PI/2.0f));
+    return true;
+}
+
 void Scene::setFOV(float angle)
 {
     gesture_camera_->SetFieldOfView(angle);

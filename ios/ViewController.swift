@@ -3327,6 +3327,14 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
 
         // 5) 안내
         self.showToast(message: "The volume has been calculated.", seconds: 4)
+
+        if self.isPaused {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                self.view.setNeedsDisplay()
+            }
+        } else {
+            self.view.setNeedsDisplay()
+        }
     }
 
     @IBAction func manualButtonTapped(_ sender: UIButton) {

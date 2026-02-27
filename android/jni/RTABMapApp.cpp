@@ -263,6 +263,7 @@ RTABMapApp::RTABMapApp() :
 		exporting_(false),
 		postProcessing_(false),
 		filterPolygonsOnNextRender_(false),
+		autoCenterCameraOnNextRender_(false),
 		gainCompensationOnNextRender_(0),
 		bilateralFilteringOnNextRender_(false),
 		takeScreenshotOnNextRender_(false),
@@ -1001,6 +1002,7 @@ int RTABMapApp::openDatabase(const std::string & databasePath, bool databaseInMe
     }
 
     clearSceneOnNextRender_ = status<=0;
+    autoCenterCameraOnNextRender_ = status >= 0 && (!poses.empty() || status > 0);
 
     return status;
 }
@@ -1745,6 +1747,11 @@ int RTABMapApp::Render()
 			bool isMeshRendering = main_scene_.isMeshRendering();
 			bool isTextureRendering = main_scene_.isMeshTexturing();
 
+			if(autoCenterCameraOnNextRender_ && main_scene_.focusOnClouds())
+			{
+				autoCenterCameraOnNextRender_ = false;
+			}
+
 			main_scene_.setMeshRendering(main_scene_.hasMesh(g_optMeshId), main_scene_.hasTexture(g_optMeshId));
 
 			main_scene_.setFrustumVisible(camera_!=0);
@@ -2358,7 +2365,12 @@ int RTABMapApp::Render()
                 
             }
 
-            main_scene_.setFrustumVisible(camera_!=0);
+			if(autoCenterCameraOnNextRender_ && main_scene_.focusOnClouds())
+			{
+				autoCenterCameraOnNextRender_ = false;
+			}
+
+			main_scene_.setFrustumVisible(camera_!=0);
 			lastDrawnCloudsCount_ = main_scene_.Render(uvsTransformed, arViewMatrix, arProjectionMatrix, occlusionMesh, true);
             double fpsTime = fpsTime_.ticks();
             if(renderingTime_ < fpsTime)
