@@ -2583,9 +2583,21 @@ void RTABMapApp::setAutoGroundThreshold(float threshold)
 {
 	main_scene_.setAutoGroundThreshold(threshold);
 }
+void RTABMapApp::setAutoGroundCutOffset(float offsetMeters)
+{
+	main_scene_.setAutoGroundCutOffset(offsetMeters);
+}
 void RTABMapApp::clearVolumePreview()
 {
 	main_scene_.clearVolumePreview();
+}
+float RTABMapApp::estimateAutoGroundThreshold()
+{
+	return main_scene_.estimateAutoGroundThreshold(-100);
+}
+void RTABMapApp::refreshAutoGroundPreview()
+{
+	main_scene_.refreshAutoGroundPreview(-100);
 }
 
 void RTABMapApp::setLocalizationMode(bool enabled)

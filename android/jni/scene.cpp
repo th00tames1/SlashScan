@@ -30,6 +30,7 @@
 #include <cmath> // fabs, sqrt
 #include <numeric> // std::accumulate
 #include <algorithm>
+#include <limits>
 
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -289,32 +290,6 @@ inline GroundPlane fitGroundPlaneFromMeshPoints(const std::vector<pcl::PointXYZ>
         return P;
     }
 
-    std::vector<double> ys;
-    ys.reserve(points.size());
-    for(const auto & p : points)
-    {
-        ys.push_back(p.y);
-    }
-
-    const size_t keep = std::max<size_t>(3, ys.size() / 5);
-    std::nth_element(ys.begin(), ys.begin() + (keep - 1), ys.end());
-    const double yThreshold = ys[keep - 1];
-
-    std::vector<Eigen::Vector3d> candidates;
-    candidates.reserve(keep * 2);
-    for(const auto & p : points)
-    {
-        if(p.y <= yThreshold)
-        {
-            candidates.emplace_back(p.x, p.y, p.z);
-        }
-    }
-
-    if(candidates.size() < 3)
-    {
-        return P;
-    }
-
     auto fitFrom = [](const std::vector<Eigen::Vector3d> & src) -> GroundPlane
     {
         GroundPlane out;
@@ -352,38 +327,158 @@ inline GroundPlane fitGroundPlaneFromMeshPoints(const std::vector<pcl::PointXYZ>
         return out;
     };
 
-    GroundPlane rough = fitFrom(candidates);
-    if(!rough.valid)
+    std::vector<double> ys;
+    ys.reserve(points.size());
+    for(const auto & p : points)
     {
-        return rough;
+        ys.push_back(p.y);
     }
 
-    std::vector<double> residuals;
-    residuals.reserve(candidates.size());
-    for(const auto & p : candidates)
-    {
-        residuals.push_back(std::fabs(p.y() - (rough.a * p.x() + rough.b * p.z() + rough.c)));
-    }
-    std::nth_element(residuals.begin(), residuals.begin() + residuals.size()/2, residuals.end());
-    const double medianResidual = residuals[residuals.size()/2];
-    const double inlierThreshold = std::max(0.02, medianResidual * 2.5);
+    const size_t keep = std::max<size_t>(3, std::min(points.size(), (points.size() * 2) / 5));
+    std::nth_element(ys.begin(), ys.begin() + (keep - 1), ys.end());
+    const double yThreshold = ys[keep - 1];
 
-    std::vector<Eigen::Vector3d> inliers;
-    inliers.reserve(candidates.size());
-    for(const auto & p : candidates)
+    std::vector<Eigen::Vector3d> candidates;
+    candidates.reserve(keep + 16);
+    for(const auto & p : points)
     {
-        const double r = std::fabs(p.y() - (rough.a * p.x() + rough.b * p.z() + rough.c));
-        if(r <= inlierThreshold)
+        if(p.y <= yThreshold)
         {
-            inliers.push_back(p);
+            candidates.emplace_back(p.x, p.y, p.z);
         }
     }
 
-    if(inliers.size() < 3)
+    if(candidates.size() < 3)
     {
-        return rough;
+        return P;
     }
-    return fitFrom(inliers);
+
+    std::vector<double> cy;
+    cy.reserve(candidates.size());
+    for(const auto & c : candidates)
+    {
+        cy.push_back(c.y());
+    }
+    const size_t idx10 = (cy.size() - 1) / 10;
+    const size_t idx90 = ((cy.size() - 1) * 9) / 10;
+    std::nth_element(cy.begin(), cy.begin() + idx10, cy.end());
+    const double y10 = cy[idx10];
+    std::nth_element(cy.begin(), cy.begin() + idx90, cy.end());
+    const double y90 = cy[idx90];
+    const double roughness = std::max(0.0, y90 - y10);
+
+    const double inlierThreshold = std::max(0.03, std::min(0.20, roughness * 0.15 + 0.03));
+    const int iterations = std::max(250, std::min(1200, int(candidates.size()) * 3));
+    unsigned int seed = 2166136261u ^ (unsigned int)candidates.size();
+    auto pick = [&seed](int maxExclusive) -> int
+    {
+        seed = seed * 1664525u + 1013904223u;
+        return int(seed % (unsigned int)maxExclusive);
+    };
+
+    int bestInliers = 0;
+    double bestMeanError = std::numeric_limits<double>::max();
+    Eigen::Vector3d bestN(0.0, 1.0, 0.0);
+    double bestD = 0.0;
+
+    for(int it = 0; it < iterations; ++it)
+    {
+        int i0 = pick(int(candidates.size()));
+        int i1 = pick(int(candidates.size()));
+        int i2 = pick(int(candidates.size()));
+        if(i0 == i1 || i0 == i2 || i1 == i2)
+        {
+            continue;
+        }
+
+        const Eigen::Vector3d & p0 = candidates[(size_t)i0];
+        const Eigen::Vector3d & p1 = candidates[(size_t)i1];
+        const Eigen::Vector3d & p2 = candidates[(size_t)i2];
+        Eigen::Vector3d n = (p1 - p0).cross(p2 - p0);
+        const double nn = n.norm();
+        if(nn < 1e-9)
+        {
+            continue;
+        }
+        n /= nn;
+
+        if(std::fabs(n.y()) < 0.2)
+        {
+            continue;
+        }
+        if(n.y() < 0.0)
+        {
+            n = -n;
+        }
+        const double d = -n.dot(p0);
+
+        int inliers = 0;
+        double errSum = 0.0;
+        for(const auto & c : candidates)
+        {
+            const double dist = std::fabs(n.dot(c) + d);
+            if(dist <= inlierThreshold)
+            {
+                ++inliers;
+                errSum += dist;
+            }
+        }
+        if(inliers < 3)
+        {
+            continue;
+        }
+
+        const double meanErr = errSum / double(inliers);
+        if(inliers > bestInliers || (inliers == bestInliers && meanErr < bestMeanError))
+        {
+            bestInliers = inliers;
+            bestMeanError = meanErr;
+            bestN = n;
+            bestD = d;
+        }
+    }
+
+    if(bestInliers < std::max(3, int(candidates.size() / 10)))
+    {
+        return fitFrom(candidates);
+    }
+
+    std::vector<Eigen::Vector3d> inliers;
+    inliers.reserve((size_t)bestInliers);
+    for(const auto & c : candidates)
+    {
+        const double dist = std::fabs(bestN.dot(c) + bestD);
+        if(dist <= inlierThreshold)
+        {
+            inliers.push_back(c);
+        }
+    }
+
+    GroundPlane refined = fitFrom(inliers);
+    if(!refined.valid)
+    {
+        return fitFrom(candidates);
+    }
+
+    std::vector<Eigen::Vector3d> tightened;
+    tightened.reserve(inliers.size());
+    for(const auto & c : inliers)
+    {
+        const double r = std::fabs(c.y() - (refined.a * c.x() + refined.b * c.z() + refined.c));
+        if(r <= inlierThreshold)
+        {
+            tightened.push_back(c);
+        }
+    }
+    if(tightened.size() >= 3)
+    {
+        GroundPlane finalPlane = fitFrom(tightened);
+        if(finalPlane.valid)
+        {
+            return finalPlane;
+        }
+    }
+    return refined;
 }
 
 inline double computeVolumeAbovePlane(
@@ -522,6 +617,49 @@ inline void splitPolygonsByPlane(
     }
 }
 
+inline bool resolveAutoGroundPlaneAndThreshold(
+    const std::vector<pcl::PointXYZ> & vertices,
+    float configuredThreshold,
+    float cutOffsetMeters,
+    PlaneBy3Points & plane,
+    double & minHeight)
+{
+    const GroundPlane Gauto = fitGroundPlaneFromMeshPoints(vertices);
+    if(!Gauto.valid)
+    {
+        return false;
+    }
+
+    plane = planeFromGroundPlane(Gauto);
+    if(!plane.valid)
+    {
+        return false;
+    }
+    if(std::fabs(cutOffsetMeters) > 1e-6f)
+    {
+        plane.anchor += plane.normal * (double)cutOffsetMeters;
+    }
+
+    double maxHeight = 0.0;
+    for(const auto & v : vertices)
+    {
+        const Eigen::Vector3d p(v.x, v.y, v.z);
+        const double h = std::max(0.0, signedDistanceToPlane(p, plane));
+        if(h > maxHeight)
+        {
+            maxHeight = h;
+        }
+    }
+    if(maxHeight <= 1e-9)
+    {
+        return false;
+    }
+
+    const double adaptiveHeight = std::max(0.02, std::min(0.08, maxHeight * 0.03));
+    minHeight = configuredThreshold > 0.0f ? (double)configuredThreshold : adaptiveHeight;
+    return true;
+}
+
 } // namespace
 
 Scene::Scene() :
@@ -560,6 +698,7 @@ Scene::Scene() :
         croppingOn_(false),
         volumeMethod_(kVolumeMethodMarkerGroundPlane),
         autoGroundThreshold_(0.0f),
+        autoGroundCutOffset_(0.0f),
         lineWidth_(12.0f),
         polygonClosed_(false)
 {
@@ -1887,6 +2026,11 @@ void Scene::setAutoGroundThreshold(float threshold)
     autoGroundThreshold_ = std::min(0.30f, std::max(0.005f, threshold));
 }
 
+void Scene::setAutoGroundCutOffset(float offsetMeters)
+{
+    autoGroundCutOffset_ = std::max(-0.20f, std::min(0.20f, offsetMeters));
+}
+
 void Scene::clearVolumePreview()
 {
     for(auto & kv : cropWireframeClouds_)
@@ -1894,6 +2038,139 @@ void Scene::clearVolumePreview()
         delete kv.second;
     }
     cropWireframeClouds_.clear();
+}
+
+float Scene::estimateAutoGroundThreshold(int meshId)
+{
+    auto it = pointClouds_.find(meshId);
+    if(it == pointClouds_.end())
+    {
+        return 0.03f;
+    }
+    PointCloudDrawable * drawable = it->second;
+    if(!drawable || !drawable->hasMesh())
+    {
+        return 0.03f;
+    }
+
+    rtabmap::Mesh mesh = drawable->getMesh();
+    std::map<int, rtabmap::Mesh>::const_iterator srcIter = originalMeshes_.find(meshId);
+    if(srcIter != originalMeshes_.end() && srcIter->second.cloud && !srcIter->second.cloud->empty() && !srcIter->second.polygons.empty())
+    {
+        mesh = srcIter->second;
+    }
+    if(mesh.polygons.empty() || !mesh.cloud || mesh.cloud->empty())
+    {
+        return 0.03f;
+    }
+
+    rtabmap::Transform meshToScene = rtabmap::Transform::getIdentity();
+    if (!drawable->getPose().isNull() && !mesh.pose.isNull())
+        meshToScene = drawable->getPose() * mesh.pose;
+    else if (!mesh.pose.isNull())
+        meshToScene = mesh.pose;
+
+    const Eigen::Affine3f T = meshToScene.toEigen3f();
+    std::vector<pcl::PointXYZ> V;
+    V.reserve(mesh.cloud->size());
+    for(size_t i = 0; i < mesh.cloud->size(); ++i)
+    {
+        const pcl::PointXYZRGB & pL = mesh.cloud->at(i);
+        Eigen::Vector3f s = T * Eigen::Vector3f(pL.x, pL.y, pL.z);
+        V.emplace_back(pcl::PointXYZ{s.x(), s.y(), s.z()});
+    }
+
+    PlaneBy3Points plane;
+    double minHeight = 0.03;
+    if(!resolveAutoGroundPlaneAndThreshold(V, 0.0f, 0.0f, plane, minHeight))
+    {
+        return 0.03f;
+    }
+    return float(std::max(0.005, std::min(0.30, minHeight)));
+}
+
+bool Scene::refreshAutoGroundPreview(int meshId)
+{
+    auto it = pointClouds_.find(meshId);
+    if(it == pointClouds_.end())
+    {
+        return false;
+    }
+    PointCloudDrawable * drawable = it->second;
+    if(!drawable || !drawable->hasMesh())
+    {
+        return false;
+    }
+
+    rtabmap::Mesh mesh = drawable->getMesh();
+    std::map<int, rtabmap::Mesh>::const_iterator srcIter = originalMeshes_.find(meshId);
+    if(srcIter != originalMeshes_.end() && srcIter->second.cloud && !srcIter->second.cloud->empty() && !srcIter->second.polygons.empty())
+    {
+        mesh = srcIter->second;
+    }
+    if(mesh.polygons.empty() || !mesh.cloud || mesh.cloud->empty())
+    {
+        return false;
+    }
+
+    rtabmap::Transform meshToScene = rtabmap::Transform::getIdentity();
+    if (!drawable->getPose().isNull() && !mesh.pose.isNull())
+        meshToScene = drawable->getPose() * mesh.pose;
+    else if (!mesh.pose.isNull())
+        meshToScene = mesh.pose;
+
+    const Eigen::Affine3f T = meshToScene.toEigen3f();
+    std::vector<pcl::PointXYZ> V;
+    V.reserve(mesh.cloud->size());
+    for(size_t i = 0; i < mesh.cloud->size(); ++i)
+    {
+        const pcl::PointXYZRGB & pL = mesh.cloud->at(i);
+        Eigen::Vector3f s = T * Eigen::Vector3f(pL.x, pL.y, pL.z);
+        V.emplace_back(pcl::PointXYZ{s.x(), s.y(), s.z()});
+    }
+
+    PlaneBy3Points plane;
+    double minHeight = 0.03;
+    if(!resolveAutoGroundPlaneAndThreshold(V, autoGroundThreshold_, autoGroundCutOffset_, plane, minHeight))
+    {
+        return false;
+    }
+
+    std::vector<pcl::Vertices> insidePolygons;
+    std::vector<pcl::Vertices> outsidePolygons;
+    splitPolygonsByPlane(V, mesh.polygons, plane, minHeight, insidePolygons, outsidePolygons);
+
+    rtabmap::Mesh insideMesh = mesh;
+    insideMesh.polygons = insidePolygons;
+    insideMesh.polygonsLowRes.clear();
+    drawable->updateMesh(insideMesh);
+
+    auto wIter = cropWireframeClouds_.find(meshId);
+    if(!outsidePolygons.empty())
+    {
+        rtabmap::Mesh outsideMesh = mesh;
+        outsideMesh.polygons = outsidePolygons;
+        outsideMesh.polygonsLowRes.clear();
+        if(wIter == cropWireframeClouds_.end())
+        {
+            PointCloudDrawable * wf = new PointCloudDrawable(outsideMesh, true);
+            wf->setPose(drawable->getPose());
+            cropWireframeClouds_.insert(std::make_pair(meshId, wf));
+        }
+        else
+        {
+            wIter->second->setPose(drawable->getPose());
+            wIter->second->updateMesh(outsideMesh, true);
+        }
+    }
+    else if(wIter != cropWireframeClouds_.end())
+    {
+        delete wIter->second;
+        cropWireframeClouds_.erase(wIter);
+    }
+
+    wireFrame_ = false;
+    return true;
 }
 
 void Scene::filterMeshInsidePolygon(
@@ -2106,37 +2383,13 @@ double Scene::calculateMeshVolume(int meshId, int method)
 
     if(selectedMethod == kVolumeMethodAutoGroundRemoval)
     {
-        const GroundPlane Gauto = fitGroundPlaneFromMeshPoints(V);
-        if(!Gauto.valid)
+        PlaneBy3Points Pauto;
+        double minHeight = 0.03;
+        if(!resolveAutoGroundPlaneAndThreshold(V, autoGroundThreshold_, autoGroundCutOffset_, Pauto, minHeight))
         {
             UWARN("calculateMeshVolume() -> auto-ground fit failed; volume=0");
             return 0.0;
         }
-        const PlaneBy3Points Pauto = planeFromGroundPlane(Gauto);
-        if(!Pauto.valid)
-        {
-            UWARN("calculateMeshVolume() -> auto-ground plane invalid; volume=0");
-            return 0.0;
-        }
-
-        double maxHeight = 0.0;
-        for(const auto & v : V)
-        {
-            const Eigen::Vector3d p(v.x, v.y, v.z);
-            const double h = std::max(0.0, signedDistanceToPlane(p, Pauto));
-            if(h > maxHeight)
-            {
-                maxHeight = h;
-            }
-        }
-
-        if(maxHeight <= 1e-9)
-        {
-            return 0.0;
-        }
-
-        const double adaptiveHeight = std::max(0.02, std::min(0.08, maxHeight * 0.03));
-        const double minHeight = autoGroundThreshold_ > 0.0f ? (double)autoGroundThreshold_ : adaptiveHeight;
         totalVolume = computeVolumeAbovePlane(V, mesh.polygons, Pauto, minHeight);
         applyPlaneSplitVisualization(Pauto, minHeight);
         return totalVolume;

@@ -665,11 +665,45 @@ void setAutoGroundThresholdNative(const void *object, float threshold)
     }
 }
 
+void setAutoGroundCutOffsetNative(const void *object, float offsetMeters)
+{
+    if(object)
+    {
+        native(object)->setAutoGroundCutOffset(offsetMeters);
+    }
+    else
+    {
+        UERROR("object is null!");
+    }
+}
+
 void clearVolumePreviewNative(const void *object)
 {
     if(object)
     {
         native(object)->clearVolumePreview();
+    }
+    else
+    {
+        UERROR("object is null!");
+    }
+}
+
+float estimateAutoGroundThresholdNative(const void *object)
+{
+    if(object)
+    {
+        return native(object)->estimateAutoGroundThreshold();
+    }
+    UERROR("object is null!");
+    return 0.03f;
+}
+
+void refreshAutoGroundPreviewNative(const void *object)
+{
+    if(object)
+    {
+        native(object)->refreshAutoGroundPreview();
     }
     else
     {

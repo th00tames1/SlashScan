@@ -107,6 +107,9 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     private var wasInitializing = false
     private let forceHideDebug = true
     private var hasVolume = false
+    private let autoGroundSlider = UISlider(frame: .zero)
+    private let autoGroundSliderLabel = UILabel(frame: .zero)
+    private var autoGroundSliderSetupDone = false
     
     private var editRectStart: CGPoint?
     private var editRectCurrent: CGRect?
@@ -171,10 +174,88 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         return Float(clamped)
     }
 
+    private func setupAutoGroundSliderUI() {
+        if autoGroundSliderSetupDone {
+            return
+        }
+        autoGroundSliderSetupDone = true
+
+        autoGroundSlider.minimumValue = -20.0
+        autoGroundSlider.maximumValue = 20.0
+        autoGroundSlider.value = 0.0
+        autoGroundSlider.minimumTrackTintColor = .systemYellow
+        autoGroundSlider.maximumTrackTintColor = UIColor.white.withAlphaComponent(0.35)
+        autoGroundSlider.isHidden = true
+        autoGroundSlider.addTarget(self, action: #selector(autoGroundSliderValueChanged(_:)), for: .valueChanged)
+
+        autoGroundSliderLabel.textColor = .white
+        autoGroundSliderLabel.font = UIFont.systemFont(ofSize: 12, weight: .semibold)
+        autoGroundSliderLabel.textAlignment = .center
+        autoGroundSliderLabel.numberOfLines = 1
+        autoGroundSliderLabel.isHidden = true
+        autoGroundSliderLabel.text = "Ground Cut +0.0 cm"
+
+        autoGroundSlider.translatesAutoresizingMaskIntoConstraints = false
+        autoGroundSliderLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(autoGroundSlider)
+        view.addSubview(autoGroundSliderLabel)
+
+        NSLayoutConstraint.activate([
+            autoGroundSlider.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
+            autoGroundSlider.widthAnchor.constraint(equalTo: view.safeAreaLayoutGuide.widthAnchor, multiplier: 0.25),
+            autoGroundSlider.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -64),
+            autoGroundSliderLabel.leadingAnchor.constraint(equalTo: autoGroundSlider.leadingAnchor),
+            autoGroundSliderLabel.trailingAnchor.constraint(equalTo: autoGroundSlider.trailingAnchor),
+            autoGroundSliderLabel.bottomAnchor.constraint(equalTo: autoGroundSlider.topAnchor, constant: -6)
+        ])
+    }
+
+    private func updateAutoGroundSliderLabel(_ cutOffsetCm: Float) {
+        autoGroundSliderLabel.text = String(format: "Ground Cut %+0.1f cm", cutOffsetCm)
+    }
+
+    private func updateAutoGroundSliderVisibility() {
+        let visible = mState == .STATE_EDIT && currentVolumeMethod() == 2
+        autoGroundSlider.isHidden = !visible
+        autoGroundSliderLabel.isHidden = !visible
+    }
+
+    private func refreshAutoGroundPreviewDisplay() {
+        rtabmap?.refreshAutoGroundPreview()
+        if self.isPaused {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                self.view.setNeedsDisplay()
+            }
+        } else {
+            self.view.setNeedsDisplay()
+        }
+    }
+
+    private func beginAutoGroundEditPreview() {
+        let estimated = max(Float(0.005), min(Float(0.30), rtabmap?.estimateAutoGroundThreshold() ?? 0.03))
+        autoGroundSlider.setValue(0.0, animated: false)
+        updateAutoGroundSliderLabel(0.0)
+        rtabmap?.setAutoGroundThreshold(threshold: estimated)
+        rtabmap?.setAutoGroundCutOffset(offsetMeters: 0.0)
+        refreshAutoGroundPreviewDisplay()
+        editsaveButton.isEnabled = true
+    }
+
+    @objc private func autoGroundSliderValueChanged(_ sender: UISlider) {
+        if mState != .STATE_EDIT || currentVolumeMethod() != 2 {
+            return
+        }
+        let cutCm = max(Float(-20.0), min(Float(20.0), sender.value))
+        updateAutoGroundSliderLabel(cutCm)
+        rtabmap?.setAutoGroundCutOffset(offsetMeters: cutCm / 100.0)
+        refreshAutoGroundPreviewDisplay()
+    }
+
     private func applyVolumeMethodUI() {
         let method = currentVolumeMethod()
         rtabmap?.setVolumeMethod(method: method)
-        rtabmap?.setAutoGroundThreshold(threshold: currentAutoGroundThreshold())
+        let threshold = currentAutoGroundThreshold()
+        rtabmap?.setAutoGroundThreshold(threshold: threshold)
         if mState != .STATE_EDIT {
             rtabmap?.clearVolumePreview()
         }
@@ -188,6 +269,15 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             editsaveButton.isEnabled = true
             editButton.isHidden = false
             cropButton.tintColor = .white
+        }
+
+        updateAutoGroundSliderVisibility()
+        if autoGroundMode && mState == .STATE_EDIT {
+            beginAutoGroundEditPreview()
+        } else {
+            autoGroundSlider.setValue(0.0, animated: false)
+            updateAutoGroundSliderLabel(0.0)
+            rtabmap?.setAutoGroundCutOffset(offsetMeters: 0.0)
         }
     }
     
@@ -315,6 +405,7 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         
         registerSettingsBundle()
         updateDisplayFromDefaults()
+        setupAutoGroundSliderUI()
         applyVolumeMethodUI()
         
         maxPolygonsPickerView = UIPickerView(frame: CGRect(x: 10, y: 50, width: 250, height: 150))
@@ -1243,6 +1334,8 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             cancelButton.isHidden = true
             editsaveButton.isHidden = true
         }
+
+        updateAutoGroundSliderVisibility()
 
         let view = self.view as? GLKView
         if(mState != .STATE_MAPPING && mState != .STATE_CAMERA && mState != .STATE_VISUALIZING_CAMERA)
@@ -3206,6 +3299,9 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
             titleContent.isHidden = true
             TruckLabel.isHidden = true
             applyVolumeMethodUI()
+            if currentVolumeMethod() == 2 {
+                beginAutoGroundEditPreview()
+            }
         }
     }
 

@@ -151,7 +151,10 @@ class Scene {
   void setGridColor(float r, float g, float b);
   void setVolumeMethod(int method);
   void setAutoGroundThreshold(float threshold);
+  void setAutoGroundCutOffset(float offsetMeters);
   void clearVolumePreview();
+  float estimateAutoGroundThreshold(int meshId);
+  bool refreshAutoGroundPreview(int meshId);
 
   bool isBlending() const {return blending_;}
   bool isMapRendering() const {return mapRendering_;}
@@ -237,6 +240,7 @@ class Scene {
   cv::Point2f doubleTapPos_;
   int volumeMethod_;
   float autoGroundThreshold_;
+  float autoGroundCutOffset_;
   std::map<int, PointCloudDrawable*> cropWireframeClouds_;
     
     std::vector<int> markerOrder_;

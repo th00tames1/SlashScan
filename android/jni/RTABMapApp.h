@@ -131,7 +131,10 @@ class RTABMapApp : public UEventsHandler {
   void setWireframe(bool enabled);
   void setVolumeMethod(int method);
   void setAutoGroundThreshold(float threshold);
+  void setAutoGroundCutOffset(float offsetMeters);
   void clearVolumePreview();
+  float estimateAutoGroundThreshold();
+  void refreshAutoGroundPreview();
   void setLocalizationMode(bool enabled);
   void setTrajectoryMode(bool enabled);
   void setGraphOptimization(bool enabled);

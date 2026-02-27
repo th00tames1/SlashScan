@@ -172,8 +172,20 @@ class RTABMap {
         setAutoGroundThresholdNative(native_rtabmap, threshold)
     }
 
+    func setAutoGroundCutOffset(offsetMeters: Float) {
+        setAutoGroundCutOffsetNative(native_rtabmap, offsetMeters)
+    }
+
     func clearVolumePreview() {
         clearVolumePreviewNative(native_rtabmap)
+    }
+
+    func estimateAutoGroundThreshold() -> Float {
+        return estimateAutoGroundThresholdNative(native_rtabmap)
+    }
+
+    func refreshAutoGroundPreview() {
+        refreshAutoGroundPreviewNative(native_rtabmap)
     }
 
     func calculateMeshVolume() -> Double {
