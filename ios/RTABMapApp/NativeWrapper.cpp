@@ -653,18 +653,6 @@ void setVolumeMethodNative(const void *object, int method)
     }
 }
 
-void setVolumeVisualizationModeNative(const void *object, int mode)
-{
-    if(object)
-    {
-        native(object)->setVolumeVisualizationMode(mode);
-    }
-    else
-    {
-        UERROR("object is null!");
-    }
-}
-
 void setAutoGroundThresholdNative(const void *object, float threshold)
 {
     if(object)

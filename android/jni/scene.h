@@ -149,7 +149,6 @@ class Scene {
   void setBackgroundColor(float r, float g, float b) {r_=r; g_=g; b_=b;} // 0.0f <> 1.0f
   void setGridColor(float r, float g, float b);
   void setVolumeMethod(int method);
-  void setVolumeVisualizationMode(int mode);
   void setAutoGroundThreshold(float threshold);
   void clearVolumePreview();
 
@@ -175,7 +174,8 @@ class Scene {
     void filterMeshInsidePolygon(
         const std::vector<rtabmap::Transform> & polygon2D,
         rtabmap::Mesh & mesh,
-                                        const rtabmap::Transform & drawablePose);
+        const rtabmap::Transform & drawablePose,
+        std::vector<pcl::Vertices> * outsidePolygons = 0);
     double calculateMeshVolume(int meshId, int method = 0);
     pcl::PointXYZ computeMarkerPolygonCentroid() const;
     
@@ -235,9 +235,8 @@ class Scene {
   bool croppingOn_;
   cv::Point2f doubleTapPos_;
   int volumeMethod_;
-  int volumeVisualizationMode_;
   float autoGroundThreshold_;
-  std::map<int, rtabmap::Mesh> volumePreviewSourceMeshes_;
+  std::map<int, PointCloudDrawable*> cropWireframeClouds_;
     
     std::vector<int> markerOrder_;
     std::vector<rtabmap::Transform> markerPoses_;

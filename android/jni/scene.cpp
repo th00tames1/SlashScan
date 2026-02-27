@@ -107,11 +107,6 @@ enum VolumeMethod {
     kVolumeMethodAutoGroundRemoval = 2
 };
 
-enum VolumeVisualizationMode {
-    kVolumeVisualizationMeasuredOnly = 0,
-    kVolumeVisualizationMeasuredColored = 1
-};
-
 struct GroundPlane {
     double a{0.0}, b{0.0}, c{0.0};
     bool valid{false};
@@ -463,30 +458,36 @@ inline double computeVolumeAbovePlane(
     return volume;
 }
 
-inline std::vector<pcl::Vertices> selectPolygonsAbovePlane(
+inline void splitPolygonsByPlane(
     const std::vector<pcl::PointXYZ> & vertices,
     const std::vector<pcl::Vertices> & polygons,
     const PlaneBy3Points & plane,
-    double minHeight)
+    double minHeight,
+    std::vector<pcl::Vertices> & inside,
+    std::vector<pcl::Vertices> & outside)
 {
-    std::vector<pcl::Vertices> filtered;
-    filtered.reserve(polygons.size());
+    inside.clear();
+    outside.clear();
     if(!plane.valid)
     {
-        return filtered;
+        outside = polygons;
+        return;
     }
 
+    inside.reserve(polygons.size());
+    outside.reserve(polygons.size());
     for(const auto & poly : polygons)
     {
         if(poly.vertices.size() < 3)
         {
+            outside.push_back(poly);
             continue;
         }
 
         double sumH = 0.0;
         double maxH = 0.0;
         int validCount = 0;
-        for(unsigned int i = 0; i < poly.vertices.size(); ++i)
+        for(unsigned int i=0; i<poly.vertices.size(); ++i)
         {
             const int idx = poly.vertices[i];
             if(idx < 0 || idx >= (int)vertices.size())
@@ -505,54 +506,22 @@ inline std::vector<pcl::Vertices> selectPolygonsAbovePlane(
 
         if(validCount == 0)
         {
+            outside.push_back(poly);
             continue;
         }
 
         const double meanH = sumH / double(validCount);
         if(maxH > minHeight && meanH > minHeight * 0.35)
         {
-            filtered.push_back(poly);
+            inside.push_back(poly);
         }
-    }
-    return filtered;
-}
-
-inline void tintPolygons(
-    rtabmap::Mesh & mesh,
-    const std::vector<pcl::Vertices> & polygons,
-    unsigned char r,
-    unsigned char g,
-    unsigned char b)
-{
-    if(!mesh.cloud || mesh.cloud->empty())
-    {
-        return;
-    }
-
-    std::vector<char> used(mesh.cloud->size(), 0);
-    for(const auto & poly : polygons)
-    {
-        for(unsigned int i=0; i<poly.vertices.size(); ++i)
+        else
         {
-            const int idx = poly.vertices[i];
-            if(idx >= 0 && idx < (int)used.size())
-            {
-                used[idx] = 1;
-            }
-        }
-    }
-
-    for(size_t i=0; i<used.size(); ++i)
-    {
-        if(used[i])
-        {
-            pcl::PointXYZRGB & p = mesh.cloud->at(i);
-            p.r = r;
-            p.g = g;
-            p.b = b;
+            outside.push_back(poly);
         }
     }
 }
+
 } // namespace
 
 Scene::Scene() :
@@ -590,7 +559,6 @@ Scene::Scene() :
         doubleTapOn_(false),
         croppingOn_(false),
         volumeMethod_(kVolumeMethodMarkerGroundPlane),
-        volumeVisualizationMode_(kVolumeVisualizationMeasuredOnly),
         autoGroundThreshold_(0.0f),
         lineWidth_(12.0f),
         polygonClosed_(false)
@@ -700,6 +668,10 @@ void Scene::clear()
     {
         delete iter->second;
     }
+    for(std::map<int, PointCloudDrawable*>::iterator iter=cropWireframeClouds_.begin(); iter!=cropWireframeClouds_.end(); ++iter)
+    {
+        delete iter->second;
+    }
     for(std::map<int, tango_gl::Axis*>::iterator iter=markers_.begin(); iter!=markers_.end(); ++iter)
     {
         delete iter->second;
@@ -714,6 +686,7 @@ void Scene::clear()
         graph_ = 0;
     }
     pointClouds_.clear();
+    cropWireframeClouds_.clear();
     markers_.clear();
     if(grid_)
     {
@@ -1089,6 +1062,18 @@ int Scene::Render(const float * uvsTransformed, glm::mat4 arViewMatrix, glm::mat
     doubleTapOn_ = false;
     
     // ★★ polygon이 닫혔는지 확인
+    if(volumeMethod_ == kVolumeMethodThreePointPlane && !polygonClosed_ && markerPoses_.size() == 3 && wireFrame_)
+    {
+        for(auto & kv : pointClouds_)
+        {
+            PointCloudDrawable * cloudDrawable = kv.second;
+            if(cloudDrawable && cloudDrawable->hasMesh())
+            {
+                totalVolume = calculateMeshVolume(kv.first, volumeMethod_);
+            }
+        }
+    }
+
     if(polygonClosed_ && markerPoses_.size() >= 3)
     {
         LOGI("Polygon closed! We will filter all meshes inside polygon...");
@@ -1097,21 +1082,54 @@ int Scene::Render(const float * uvsTransformed, glm::mat4 arViewMatrix, glm::mat
         std::vector<rtabmap::Transform> polygon2D = markerPoses_;
 
         // (A) createdMeshes_ 전체 순회 후 내부 필터링
+        bool cropApplied = false;
         for(auto & kv : pointClouds_)
         {
             PointCloudDrawable * cloudDrawable = kv.second;
             if(cloudDrawable && cloudDrawable->hasMesh())
             {
-                // 1) 가져오기
-                rtabmap::Mesh mesh = cloudDrawable->getMesh();
-                // 2) 필터링
-                filterMeshInsidePolygon(polygon2D, mesh, cloudDrawable->getPose());
-                // 3) 업데이트
-                volumePreviewSourceMeshes_.erase(kv.first);
-                cloudDrawable->updateMesh(mesh);
-                // 4) 볼륨 계산
+                cropApplied = true;
+                rtabmap::Mesh sourceMesh = cloudDrawable->getMesh();
+                std::map<int, rtabmap::Mesh>::const_iterator srcIter = originalMeshes_.find(kv.first);
+                if(srcIter != originalMeshes_.end())
+                {
+                    sourceMesh = srcIter->second;
+                }
+                rtabmap::Mesh insideMesh = sourceMesh;
+                std::vector<pcl::Vertices> outsidePolygons;
+                filterMeshInsidePolygon(polygon2D, insideMesh, cloudDrawable->getPose(), &outsidePolygons);
+                cloudDrawable->updateMesh(insideMesh);
+
+                auto wIter = cropWireframeClouds_.find(kv.first);
+                if(!outsidePolygons.empty())
+                {
+                    rtabmap::Mesh outsideMesh = sourceMesh;
+                    outsideMesh.polygons = outsidePolygons;
+                    outsideMesh.polygonsLowRes.clear();
+                    if(wIter == cropWireframeClouds_.end())
+                    {
+                        PointCloudDrawable * wf = new PointCloudDrawable(outsideMesh, true);
+                        wf->setPose(cloudDrawable->getPose());
+                        cropWireframeClouds_.insert(std::make_pair(kv.first, wf));
+                    }
+                    else
+                    {
+                        wIter->second->setPose(cloudDrawable->getPose());
+                        wIter->second->updateMesh(outsideMesh, true);
+                    }
+                }
+                else if(wIter != cropWireframeClouds_.end())
+                {
+                    delete wIter->second;
+                    cropWireframeClouds_.erase(wIter);
+                }
+
                 totalVolume = calculateMeshVolume(kv.first, volumeMethod_);
             }
+        }
+        if(cropApplied)
+        {
+            wireFrame_ = false;
         }
     }
 
@@ -1192,6 +1210,22 @@ int Scene::Render(const float * uvsTransformed, glm::mat4 arViewMatrix, glm::mat
         float distanceToCameraSqr = cloudToCamera[0]*cloudToCamera[0] + cloudToCamera[1]*cloudToCamera[1] + cloudToCamera[2]*cloudToCamera[2];
 
         cloud->Render(projectionMatrix, viewMatrix, meshRendering_, pointSize_, meshRenderingTexture_, lighting_, distanceToCameraSqr, onlineBlending?depthTexture_:0, screenWidth_, screenHeight_, gesture_camera_->getNearClipPlane(), gesture_camera_->getFarClipPlane(), false, wireFrame_);
+    }
+
+    for(std::map<int, PointCloudDrawable*>::const_iterator iter=cropWireframeClouds_.begin(); iter!=cropWireframeClouds_.end(); ++iter)
+    {
+        PointCloudDrawable * cloud = iter->second;
+        if(!cloud || !cloud->isVisible())
+        {
+            continue;
+        }
+
+        Eigen::Vector3f cloudToCamera(
+                cloud->getPose().x() - openglCamera.x(),
+                cloud->getPose().y() - openglCamera.y(),
+                cloud->getPose().z() - openglCamera.z());
+        float distanceToCameraSqr = cloudToCamera[0]*cloudToCamera[0] + cloudToCamera[1]*cloudToCamera[1] + cloudToCamera[2]*cloudToCamera[2];
+        cloud->Render(projectionMatrix, viewMatrix, true, pointSize_, false, lighting_, distanceToCameraSqr, onlineBlending?depthTexture_:0, screenWidth_, screenHeight_, gesture_camera_->getNearClipPlane(), gesture_camera_->getFarClipPlane(), false, true);
     }
 
     if(onlineBlending)
@@ -1546,16 +1580,14 @@ void Scene::removeMarkerAll()
             continue;
         }
 
-        auto previewIter = volumePreviewSourceMeshes_.find(id);
-        if(previewIter != volumePreviewSourceMeshes_.end())
-        {
-            iter->second->updateMesh(previewIter->second, true);
-        }
-        else
-        {
-            iter->second->updateMesh(kv.second, true);
-        }
+        iter->second->updateMesh(kv.second, true);
     }
+
+    for(auto & kv : cropWireframeClouds_)
+    {
+        delete kv.second;
+    }
+    cropWireframeClouds_.clear();
 
     // 마커들 삭제 (기존 로직)
     while (!markers_.empty())
@@ -1566,7 +1598,6 @@ void Scene::removeMarkerAll()
     }
     markerOrder_.clear();
     markerPoses_.clear();
-    volumePreviewSourceMeshes_.clear();
 
     // 폴리곤도 닫힘 상태 해제
     polygonClosed_ = false;
@@ -1591,6 +1622,12 @@ void Scene::addCloud(
         delete iter->second;
         pointClouds_.erase(iter);
     }
+    std::map<int, PointCloudDrawable*>::iterator wfIter = cropWireframeClouds_.find(id);
+    if(wfIter != cropWireframeClouds_.end())
+    {
+        delete wfIter->second;
+        cropWireframeClouds_.erase(wfIter);
+    }
 
     //create
     PointCloudDrawable * drawable = new PointCloudDrawable(cloud, indices);
@@ -1613,7 +1650,12 @@ void Scene::addMesh(
     }
     //기존 메쉬 보관
     originalMeshes_[id] = mesh;
-    volumePreviewSourceMeshes_.erase(id);
+    std::map<int, PointCloudDrawable*>::iterator wfIter = cropWireframeClouds_.find(id);
+    if(wfIter != cropWireframeClouds_.end())
+    {
+        delete wfIter->second;
+        cropWireframeClouds_.erase(wfIter);
+    }
 
     PointCloudDrawable * drawable = new PointCloudDrawable(mesh, createWireframe);
     drawable->setPose(pose);
@@ -1726,7 +1768,12 @@ void Scene::updateMesh(int id, const rtabmap::Mesh & mesh)
     if(iter != pointClouds_.end())
     {
         originalMeshes_[id] = mesh;
-        volumePreviewSourceMeshes_.erase(id);
+        std::map<int, PointCloudDrawable*>::iterator wfIter = cropWireframeClouds_.find(id);
+        if(wfIter != cropWireframeClouds_.end())
+        {
+            delete wfIter->second;
+            cropWireframeClouds_.erase(wfIter);
+        }
         
         iter->second->updateMesh(mesh);
     }
@@ -1757,18 +1804,6 @@ void Scene::setVolumeMethod(int method)
         m = kVolumeMethodMarkerGroundPlane;
     }
     volumeMethod_ = m;
-    if(volumeMethod_ == kVolumeMethodMarkerGroundPlane && !volumePreviewSourceMeshes_.empty())
-    {
-        for(auto & kv : volumePreviewSourceMeshes_)
-        {
-            auto iter = pointClouds_.find(kv.first);
-            if(iter != pointClouds_.end() && iter->second->hasMesh())
-            {
-                iter->second->updateMesh(kv.second, true);
-            }
-        }
-        volumePreviewSourceMeshes_.clear();
-    }
     if(volumeMethod_ == kVolumeMethodAutoGroundRemoval)
     {
         croppingOn_ = false;
@@ -1777,16 +1812,6 @@ void Scene::setVolumeMethod(int method)
             removeMarkerAll();
         }
     }
-}
-
-void Scene::setVolumeVisualizationMode(int mode)
-{
-    if(mode < kVolumeVisualizationMeasuredOnly || mode > kVolumeVisualizationMeasuredColored)
-    {
-        volumeVisualizationMode_ = kVolumeVisualizationMeasuredOnly;
-        return;
-    }
-    volumeVisualizationMode_ = mode;
 }
 
 void Scene::setAutoGroundThreshold(float threshold)
@@ -1801,26 +1826,18 @@ void Scene::setAutoGroundThreshold(float threshold)
 
 void Scene::clearVolumePreview()
 {
-    if(volumePreviewSourceMeshes_.empty())
+    for(auto & kv : cropWireframeClouds_)
     {
-        return;
+        delete kv.second;
     }
-
-    for(auto & kv : volumePreviewSourceMeshes_)
-    {
-        auto iter = pointClouds_.find(kv.first);
-        if(iter != pointClouds_.end() && iter->second->hasMesh())
-        {
-            iter->second->updateMesh(kv.second, true);
-        }
-    }
-    volumePreviewSourceMeshes_.clear();
+    cropWireframeClouds_.clear();
 }
 
 void Scene::filterMeshInsidePolygon(
     const std::vector<rtabmap::Transform> & polygon2D,
     rtabmap::Mesh & mesh,
-    const rtabmap::Transform & drawablePose /* 추가 인자 */ )
+    const rtabmap::Transform & drawablePose,
+    std::vector<pcl::Vertices> * outsidePolygons)
 {
     if(polygon2D.size() < 3 || mesh.cloud->empty())
     {
@@ -1853,6 +1870,11 @@ void Scene::filterMeshInsidePolygon(
     // (3) 폴리곤 내부 판별
     std::vector<pcl::Vertices> newPolygons;
     newPolygons.reserve(mesh.polygons.size());
+    if(outsidePolygons)
+    {
+        outsidePolygons->clear();
+        outsidePolygons->reserve(mesh.polygons.size());
+    }
 
     for(const auto & poly : mesh.polygons)
     {
@@ -1883,6 +1905,10 @@ void Scene::filterMeshInsidePolygon(
         if(allInside)
         {
             newPolygons.push_back(poly);
+        }
+        else if(outsidePolygons)
+        {
+            outsidePolygons->push_back(poly);
         }
     }
 
@@ -1925,14 +1951,10 @@ double Scene::calculateMeshVolume(int meshId, int method)
 
     if(selectedMethod != kVolumeMethodMarkerGroundPlane)
     {
-        auto previewIter = volumePreviewSourceMeshes_.find(meshId);
-        if(previewIter == volumePreviewSourceMeshes_.end())
+        std::map<int, rtabmap::Mesh>::const_iterator srcIter = originalMeshes_.find(meshId);
+        if(srcIter != originalMeshes_.end() && srcIter->second.cloud && !srcIter->second.cloud->empty() && !srcIter->second.polygons.empty())
         {
-            volumePreviewSourceMeshes_.insert(std::make_pair(meshId, mesh));
-        }
-        else
-        {
-            mesh = previewIter->second;
+            mesh = srcIter->second;
         }
     }
 
@@ -1954,6 +1976,51 @@ double Scene::calculateMeshVolume(int meshId, int method)
         V.emplace_back(pcl::PointXYZ{s.x(), s.y(), s.z()});
     }
 
+    auto applyPlaneSplitVisualization = [&](const PlaneBy3Points & plane, double minHeight)
+    {
+        const bool inEditVisualization =
+            wireFrame_ || cropWireframeClouds_.find(meshId) != cropWireframeClouds_.end();
+        if(!inEditVisualization)
+        {
+            return;
+        }
+
+        std::vector<pcl::Vertices> insidePolygons;
+        std::vector<pcl::Vertices> outsidePolygons;
+        splitPolygonsByPlane(V, mesh.polygons, plane, minHeight, insidePolygons, outsidePolygons);
+
+        rtabmap::Mesh insideMesh = mesh;
+        insideMesh.polygons = insidePolygons;
+        insideMesh.polygonsLowRes.clear();
+        drawable->updateMesh(insideMesh);
+
+        auto wIter = cropWireframeClouds_.find(meshId);
+        if(!outsidePolygons.empty())
+        {
+            rtabmap::Mesh outsideMesh = mesh;
+            outsideMesh.polygons = outsidePolygons;
+            outsideMesh.polygonsLowRes.clear();
+            if(wIter == cropWireframeClouds_.end())
+            {
+                PointCloudDrawable * wf = new PointCloudDrawable(outsideMesh, true);
+                wf->setPose(drawable->getPose());
+                cropWireframeClouds_.insert(std::make_pair(meshId, wf));
+            }
+            else
+            {
+                wIter->second->setPose(drawable->getPose());
+                wIter->second->updateMesh(outsideMesh, true);
+            }
+        }
+        else if(wIter != cropWireframeClouds_.end())
+        {
+            delete wIter->second;
+            cropWireframeClouds_.erase(wIter);
+        }
+
+        wireFrame_ = false;
+    };
+
     if(selectedMethod == kVolumeMethodThreePointPlane)
     {
         if(markerPoses_.size() < 3 || polygonClosed_)
@@ -1968,15 +2035,9 @@ double Scene::calculateMeshVolume(int meshId, int method)
             return 0.0;
         }
 
-        const double displayThreshold = 0.005;
-        totalVolume = computeVolumeAbovePlane(V, mesh.polygons, P3, displayThreshold);
-        rtabmap::Mesh displayMesh = mesh;
-        displayMesh.polygons = selectPolygonsAbovePlane(V, mesh.polygons, P3, displayThreshold);
-        if(volumeVisualizationMode_ == kVolumeVisualizationMeasuredColored)
-        {
-            tintPolygons(displayMesh, displayMesh.polygons, 139, 94, 60);
-        }
-        drawable->updateMesh(displayMesh);
+        const double minHeight = 0.0;
+        totalVolume = computeVolumeAbovePlane(V, mesh.polygons, P3, minHeight);
+        applyPlaneSplitVisualization(P3, minHeight);
         return totalVolume;
     }
 
@@ -2014,13 +2075,7 @@ double Scene::calculateMeshVolume(int meshId, int method)
         const double adaptiveHeight = std::max(0.02, std::min(0.08, maxHeight * 0.03));
         const double minHeight = autoGroundThreshold_ > 0.0f ? (double)autoGroundThreshold_ : adaptiveHeight;
         totalVolume = computeVolumeAbovePlane(V, mesh.polygons, Pauto, minHeight);
-        rtabmap::Mesh displayMesh = mesh;
-        displayMesh.polygons = selectPolygonsAbovePlane(V, mesh.polygons, Pauto, minHeight);
-        if(volumeVisualizationMode_ == kVolumeVisualizationMeasuredColored)
-        {
-            tintPolygons(displayMesh, displayMesh.polygons, 70, 130, 180);
-        }
-        drawable->updateMesh(displayMesh);
+        applyPlaneSplitVisualization(Pauto, minHeight);
         return totalVolume;
     }
 

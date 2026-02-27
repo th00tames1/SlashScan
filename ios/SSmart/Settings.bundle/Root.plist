@@ -92,26 +92,6 @@
 		</dict>
 		<dict>
 			<key>DefaultValue</key>
-			<integer>0</integer>
-			<key>Key</key>
-			<string>VolumeVisualizationMode</string>
-			<key>Title</key>
-			<string>Volume Visualization</string>
-			<key>Titles</key>
-			<array>
-				<string>Measured Mesh Only</string>
-				<string>Measured Mesh Colored</string>
-			</array>
-			<key>Type</key>
-			<string>PSMultiValueSpecifier</string>
-			<key>Values</key>
-			<array>
-				<integer>0</integer>
-				<integer>1</integer>
-			</array>
-		</dict>
-		<dict>
-			<key>DefaultValue</key>
 			<real>0.0</real>
 			<key>Key</key>
 			<string>AutoGroundThreshold</string>

@@ -168,10 +168,6 @@ class RTABMap {
         setVolumeMethodNative(native_rtabmap, Int32(method))
     }
 
-    func setVolumeVisualizationMode(mode: Int) {
-        setVolumeVisualizationModeNative(native_rtabmap, Int32(mode))
-    }
-
     func setAutoGroundThreshold(threshold: Float) {
         setAutoGroundThresholdNative(native_rtabmap, threshold)
     }

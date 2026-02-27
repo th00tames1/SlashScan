@@ -2567,10 +2567,6 @@ void RTABMapApp::setVolumeMethod(int method)
 {
 	main_scene_.setVolumeMethod(method);
 }
-void RTABMapApp::setVolumeVisualizationMode(int mode)
-{
-	main_scene_.setVolumeVisualizationMode(mode);
-}
 void RTABMapApp::setAutoGroundThreshold(float threshold)
 {
 	main_scene_.setAutoGroundThreshold(threshold);

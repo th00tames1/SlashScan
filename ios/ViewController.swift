@@ -162,14 +162,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         return method
     }
 
-    private func currentVolumeVisualizationMode() -> Int {
-        let mode = UserDefaults.standard.integer(forKey: "VolumeVisualizationMode")
-        if mode < 0 || mode > 1 {
-            return 0
-        }
-        return mode
-    }
-
     private func currentAutoGroundThreshold() -> Float {
         let raw = UserDefaults.standard.double(forKey: "AutoGroundThreshold")
         if raw <= 0 {
@@ -182,7 +174,6 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     private func applyVolumeMethodUI() {
         let method = currentVolumeMethod()
         rtabmap?.setVolumeMethod(method: method)
-        rtabmap?.setVolumeVisualizationMode(mode: currentVolumeVisualizationMode())
         rtabmap?.setAutoGroundThreshold(threshold: currentAutoGroundThreshold())
         if mState != .STATE_EDIT {
             rtabmap?.clearVolumePreview()
@@ -1416,21 +1407,8 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
                 }
             })
         ])
-        let volumeVisualizationMenu = UIMenu(title: "Volume Visualization", options: .displayInline, children: [
-            UIAction(title: "Measured Mesh Only", image: self.currentVolumeVisualizationMode() == 0 ? UIImage(systemName: "checkmark.circle") : UIImage(systemName: "circle"), handler: { _ in
-                UserDefaults.standard.set(0, forKey: "VolumeVisualizationMode")
-                self.applyVolumeMethodUI()
-                self.TouchAction(true)
-            }),
-            UIAction(title: "Measured Mesh Colored", image: self.currentVolumeVisualizationMode() == 1 ? UIImage(systemName: "checkmark.circle") : UIImage(systemName: "circle"), handler: { _ in
-                UserDefaults.standard.set(1, forKey: "VolumeVisualizationMode")
-                self.applyVolumeMethodUI()
-                self.TouchAction(true)
-            })
-        ])
         var viewMenuChildren: [UIMenuElement] = []
         viewMenuChildren.append(cameraMenu)
-        viewMenuChildren.append(volumeVisualizationMenu)
         viewButton.menu = UIMenu(title: "", children: viewMenuChildren)
         viewButton.addTarget(self, action: #selector(ViewController.menuOpened(_:)), for: .menuActionTriggered)
     }
@@ -3268,6 +3246,9 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
         }
 
         isCropping.toggle()
+        if isCropping {
+            self.rtabmap!.setWireframe(enabled: true)
+        }
         editsaveButton.isEnabled = !isCropping
         editButton.isHidden = isCropping
         
@@ -3283,6 +3264,9 @@ class ViewController: GLKViewController, ARSessionDelegate, RTABMapObserver, UIP
     @IBAction func cancelButtonTapped(_ sender: UIButton) {
         rtabmap?.clearVolumePreview()
         rtabmap?.removePoint();
+        if mState == .STATE_EDIT {
+            self.rtabmap!.setWireframe(enabled: true)
+        }
         if self.isPaused {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                 self.view.setNeedsDisplay()

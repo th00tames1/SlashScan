@@ -134,7 +134,6 @@ void addEnvSensorNative(const void *object, int type, float value);
 double calculateMeshVolumeNative(const void* object, int method);
 void removePointNative(const void* object);
 void setVolumeMethodNative(const void *object, int method);
-void setVolumeVisualizationModeNative(const void *object, int mode);
 void setAutoGroundThresholdNative(const void *object, float threshold);
 void clearVolumePreviewNative(const void *object);
 

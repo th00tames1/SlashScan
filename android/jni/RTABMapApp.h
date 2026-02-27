@@ -130,7 +130,6 @@ class RTABMapApp : public UEventsHandler {
   void setBackfaceCulling(bool enabled);
   void setWireframe(bool enabled);
   void setVolumeMethod(int method);
-  void setVolumeVisualizationMode(int mode);
   void setAutoGroundThreshold(float threshold);
   void clearVolumePreview();
   void setLocalizationMode(bool enabled);
